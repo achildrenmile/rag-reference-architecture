@@ -158,8 +158,8 @@ sudo systemctl start ollama
 
 Pull models:
 
-ollama pull mistral:7b-instruct-q4
-ollama pull llama3:8b-instruct-q4
+ollama pull mistral:7b
+ollama pull llama3:8b
 
 Test:
 
