@@ -169,10 +169,11 @@ ollama run mistral
 
 STEP 6 – OPENWEBUI SETUP
 
-1. Open http://localhost:3000
-2. Create admin account
-3. Disable public signup
-4. Create demo users if required
+1. ssh -L 3000:localhost:3000 user@yourservername
+2. Open http://localhost:3000
+3. Create admin account
+4. Disable public signup
+5. Create demo users if required
 
 ---
 
