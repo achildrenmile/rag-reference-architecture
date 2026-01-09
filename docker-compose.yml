@@ -7,8 +7,6 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
-
-      # JVM heap (keep ≤ 50% of container memory)
       ES_JAVA_OPTS: "-Xms4g -Xmx4g"
     volumes:
       - esdata:/usr/share/elasticsearch/data
@@ -21,17 +19,28 @@ services:
         hard: -1
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      # Persist downloaded models
+      - ollama-data:/root/.ollama
+    ports:
+      # Optional: expose only to host
+      - "127.0.0.1:11434:11434"
+    restart: unless-stopped
+
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: openwebui
     environment:
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      # Direct Docker-to-Docker communication
+      OLLAMA_BASE_URL: http://ollama:11434
     ports:
       - "127.0.0.1:3000:8080"
     depends_on:
       - elasticsearch
+      - ollama
     volumes:
       # Persist users, chats, settings
       - openwebui-data:/app/backend/data
@@ -39,6 +48,8 @@ services:
 
 volumes:
   esdata:
+    driver: local
+  ollama-data:
     driver: local
   openwebui-data:
     driver: local
