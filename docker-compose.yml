@@ -7,16 +7,19 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms8g -Xmx8g"
+
+      # JVM heap (keep ≤ 50% of container memory)
+      ES_JAVA_OPTS: "-Xms4g -Xmx4g"
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
       - "127.0.0.1:9200:9200"
-    mem_limit: 12g
+    mem_limit: 8g
     ulimits:
       memlock:
         soft: -1
         hard: -1
+    restart: unless-stopped
 
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
@@ -29,7 +32,13 @@ services:
       - "127.0.0.1:3000:8080"
     depends_on:
       - elasticsearch
+    volumes:
+      # Persist users, chats, settings
+      - openwebui-data:/app/backend/data
     restart: unless-stopped
 
 volumes:
   esdata:
+    driver: local
+  openwebui-data:
+    driver: local
