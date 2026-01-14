@@ -1,6 +1,6 @@
 # RAG Reference Architecture
 
-A complete, reproducible setup for a modern AI-assisted search and Retrieval-Augmented Generation (RAG) system using local LLMs, Elasticsearch, and secure public exposure via Cloudflare Tunnel.
+A complete, reproducible setup for a modern AI-assisted search and Retrieval-Augmented Generation (RAG) system using local LLMs, Elasticsearch, and secure public exposure via Cloudflare Tunnel. Includes EU AI Act compliance features.
 
 ## Architecture Overview
 
@@ -24,6 +24,7 @@ Elasticsearch (Hybrid Search)
 - CPU-first inference (GPU optional)
 - Docker-based deployment
 - Fully self-hosted
+- EU AI Act compliant (Article 50 transparency)
 
 ## Target Environment
 
@@ -50,7 +51,11 @@ Elasticsearch (Hybrid Search)
 ├── README.md              # This file (public documentation)
 ├── docker-compose.yml     # Container orchestration
 ├── .env.example           # Environment variables template
+├── .env                   # Actual environment variables (not in repo)
 ├── .gitignore             # Excluded files
+├── static/
+│   └── loader.js          # Custom JS for legal footer injection
+├── CREDENTIALS.md         # Sensitive credentials (not in repo)
 ├── ingest/                # Document ingestion scripts (future)
 ├── mcp/                   # MCP services (future)
 └── models/                # Model configurations (future)
@@ -166,7 +171,7 @@ curl -I http://localhost:3000
 2. Create admin account on first access
 3. Configure settings:
    - **Admin Settings** → **General** → Disable "Enable New Sign Ups"
-   - Create additional users as needed
+   - Create additional users as needed (e.g., demo user)
 
 ### Step 10: Cloudflare Tunnel Setup
 
@@ -182,7 +187,7 @@ curl -I http://localhost:3000
 
 1. In tunnel settings, go to **Public Hostname** tab
 2. Add hostname:
-   - **Subdomain**: `rag` (or your choice)
+   - **Subdomain**: `gpt4strali` (or your choice)
    - **Domain**: `your-domain.com`
    - **Service Type**: HTTP
    - **URL**: `openwebui:8080`
@@ -210,7 +215,7 @@ Look for: `INF Registered tunnel connection`
 
 ### Step 11: Verify Public Access
 
-Access your instance at: `https://rag.your-domain.com`
+Access your instance at: `https://gpt4strali.your-domain.com`
 
 ## Service Details
 
@@ -232,12 +237,44 @@ Access your instance at: `https://rag.your-domain.com`
 - **Port**: 3000 (localhost only)
 - **Backend**: Connects to Ollama via Docker network
 - **Data**: Persisted in Docker volume
+- **Customizations**: Legal footer via `static/loader.js`
 
 ### Cloudflared
 
 - **Function**: Secure tunnel to Cloudflare edge
 - **Protocol**: QUIC
 - **Authentication**: Token-based
+
+## Legal Compliance
+
+### EU AI Act (Article 50)
+
+This setup includes transparency features required by the EU AI Act:
+
+1. **Legal Footer on All Pages**: Via `static/loader.js`, a footer with links to Imprint and Privacy Policy is displayed on all pages including the login screen.
+
+2. **Banner for Logged-in Users**: The `WEBUI_BANNERS` environment variable displays a dismissible info banner after login.
+
+3. **Required Disclosures**: Your Imprint and Privacy Policy should include:
+   - AI interaction notice (users are interacting with AI, not humans)
+   - AI models used (e.g., Mistral, Llama, Phi-3)
+   - Data processing information (local processing, no third-party AI)
+   - Deployer responsibility information
+   - EU AI Act compliance statement
+
+### Customizing Legal Links
+
+Edit `static/loader.js` to change the Imprint and Privacy Policy URLs:
+
+```javascript
+footer.innerHTML = 'By using this service, you agree to our <a href="https://your-domain.com/imprint" ...>Imprint</a> and <a href="https://your-domain.com/privacy" ...>Privacy Policy</a>.';
+```
+
+Edit `docker-compose.yml` to update the banner content:
+
+```yaml
+WEBUI_BANNERS: '[{"id": "legal-notice", "type": "info", "title": "", "content": "Your message with [links](https://example.com).", "dismissible": true, "timestamp": 1}]'
+```
 
 ## Security Configuration
 
@@ -258,8 +295,16 @@ Access your instance at: `https://rag.your-domain.com`
 | Method | Description |
 |--------|-------------|
 | **OpenWebUI Auth Only** | Users need credentials to login |
-| **Cloudflare Access** | Additional authentication layer (requires payment method) |
+| **Cloudflare Access** | Additional authentication layer (requires payment method on file) |
 | **Shared Demo Account** | Single demo user for controlled sharing |
+
+### Demo Access Setup
+
+For controlled demo access without Cloudflare Access:
+1. Disable public signup in OpenWebUI
+2. Create a demo user account manually
+3. Share credentials only on request
+4. All users share the same chat history
 
 ## Maintenance
 
@@ -331,6 +376,24 @@ docker exec cloudflared printenv TUNNEL_TOKEN
 # Verify Ollama is running
 docker exec openwebui curl http://ollama:11434/api/tags
 ```
+
+### Legal footer not showing
+
+```bash
+# Verify loader.js is mounted
+docker exec openwebui cat /app/backend/open_webui/static/loader.js
+
+# Clear browser cache or use incognito mode
+```
+
+## Credentials Management
+
+Sensitive information is stored separately:
+
+- **`.env`**: Contains `TUNNEL_TOKEN` - not committed to git
+- **`CREDENTIALS.md`**: Contains all credentials, IPs, URLs - not committed to git
+
+Use `.env.example` as a template for required environment variables.
 
 ## Future Enhancements
 
