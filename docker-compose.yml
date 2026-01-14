@@ -26,12 +26,23 @@ services:
       - "127.0.0.1:11434:11434"
     restart: unless-stopped
 
+  mcpo:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: mcpo
+    command: --config /config/config.json
+    volumes:
+      - ./mcpo:/config:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: openwebui
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       WEBUI_NAME: GPT4Strali
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
       # Elasticsearch RAG Configuration
       VECTOR_DB: elasticsearch
       ELASTICSEARCH_URL: http://elasticsearch:9200
@@ -42,6 +53,7 @@ services:
     depends_on:
       - elasticsearch
       - ollama
+      - mcpo
     volumes:
       - openwebui-data:/app/backend/data
       - ./static/loader.js:/app/backend/open_webui/static/loader.js:ro
