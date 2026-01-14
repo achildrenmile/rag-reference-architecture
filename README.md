@@ -545,7 +545,7 @@ Use `.env.example` as a template for required environment variables.
 - [x] ~~Embedding generation~~ (sentence-transformers)
 - [x] ~~RAG query integration~~ (Elasticsearch vector store)
 - [x] ~~MCP services for tool access~~ (MCPO + DuckDuckGo)
-- [ ] GPU acceleration support
+- [ ] GPU acceleration (AMD 780M iGPU - experimental ROCm support)
 - [ ] Custom embedding models
 
 ## License
