@@ -946,7 +946,7 @@ Description=Disk Space Monitor for Uptime Kuma
 
 [Service]
 Type=oneshot
-ExecStart=/home/oe8yml/rag-reference-architecture/scripts/disk-monitor.sh
+ExecStart=%h/rag-reference-architecture/scripts/disk-monitor.sh
 EOF
 
 # Create timer file
