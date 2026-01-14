@@ -31,6 +31,7 @@ services:
     container_name: openwebui
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_NAME: GPT4Strali
       WEBUI_BANNERS: '[{"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our [Imprint](https://strali.solutions/impressum) and [Privacy Policy](https://strali.solutions/datenschutz).", "dismissible": true, "timestamp": 1}]'
     ports:
       - "127.0.0.1:3000:8080"
