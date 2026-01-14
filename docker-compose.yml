@@ -32,6 +32,10 @@ services:
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       WEBUI_NAME: GPT4Strali
+      # Elasticsearch RAG Configuration
+      VECTOR_DB: elasticsearch
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ENABLE_RAG_HYBRID_SEARCH: "true"
       WEBUI_BANNERS: '[{"id": "demo-warning", "type": "warning", "title": "", "content": "DEMO - DO NOT share sensitive information!", "dismissible": false, "timestamp": 1}, {"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our [Imprint](https://strali.solutions/impressum) and [Privacy Policy](https://strali.solutions/datenschutz).", "dismissible": true, "timestamp": 1}]'
     ports:
       - "127.0.0.1:3000:8080"
