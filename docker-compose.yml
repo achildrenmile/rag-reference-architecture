@@ -39,6 +39,7 @@ services:
       - ollama
     volumes:
       - openwebui-data:/app/backend/data
+      - ./static/loader.js:/app/backend/open_webui/static/loader.js:ro
     restart: unless-stopped
 
   cloudflared:
