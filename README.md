@@ -50,6 +50,7 @@ Ollama          Elasticsearch
 ├── README.md              # This file (public documentation)
 ├── SECURITY.md            # Security hardening guide (public)
 ├── docker-compose.yml     # Container orchestration
+├── backup.sh              # Automated backup script
 ├── .env.example           # Environment variables template
 ├── .env                   # Actual environment variables (not in repo)
 ├── .gitignore             # Excluded files
@@ -573,6 +574,44 @@ docker compose up -d
 # Verify services
 docker ps
 ```
+
+#### Automated Weekly Backup
+
+An automated backup script runs weekly via systemd timer:
+
+| Setting | Value |
+|---------|-------|
+| Schedule | Every Sunday at 3:00 AM |
+| Retention | 2 weeks (last 2 backups kept) |
+| Destination | Synology NAS via SSH |
+| Skipped | Ollama models (rarely change, ~11GB) |
+
+**Components:**
+- `backup.sh` - Backup script in repo root
+- `~/.config/systemd/user/rag-backup.service` - Systemd service
+- `~/.config/systemd/user/rag-backup.timer` - Weekly timer
+- `~/rag-reference-architecture/backup.log` - Backup log file
+
+**Manual Commands:**
+
+```bash
+# Check timer status
+systemctl --user status rag-backup.timer
+
+# View next scheduled run
+systemctl --user list-timers rag-backup.timer
+
+# Run backup manually
+~/rag-reference-architecture/backup.sh
+
+# View backup log
+tail -50 ~/rag-reference-architecture/backup.log
+```
+
+**Setup Requirements:**
+- SSH key authentication from rag-node-01 to NAS
+- NAS must be reachable via local network (192.168.x.x)
+- User lingering enabled: `loginctl enable-linger $USER`
 
 ### Restart Services
 
