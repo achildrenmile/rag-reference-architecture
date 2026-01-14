@@ -64,6 +64,8 @@ Ollama          Elasticsearch
 │   ├── rag-ingestion-workflow.json      # RAG pipeline workflow
 │   ├── semantic-search-workflow.json    # Vector search API workflow
 │   └── scheduled-ingestion-workflow.json # RSS auto-ingestion workflow
+├── n8n-custom/
+│   └── nginx.conf              # Nginx proxy config for legal footer injection
 ├── demo/
 │   ├── RAG_Architecture_Guide.md  # Knowledge base demo document
 │   └── prompt_templates.md        # Demo prompt templates
@@ -588,31 +590,95 @@ Automatically ingest content from RSS feeds into the RAG pipeline:
 
 ### EU AI Act (Article 50)
 
-This setup includes transparency features required by the EU AI Act:
+This setup includes transparency features required by the EU AI Act. All AI-powered tools display legal footers with links to Imprint and Privacy Policy.
 
-1. **Legal Footer on All Pages**: Via `static/loader.js`, a footer with links to Imprint and Privacy Policy is displayed on all pages including the login screen.
+### Legal Footer Implementation
 
-2. **Banner for Logged-in Users**: The `WEBUI_BANNERS` environment variable displays a dismissible info banner after login.
+| Tool | URL | Implementation | File |
+|------|-----|----------------|------|
+| **OpenWebUI** | gpt4strali.strali.solutions | JavaScript injection + banners | `static/loader.js` |
+| **Semantic Search** | gpt4strali.strali.solutions/static/search.html | HTML footer | `static/search.html` |
+| **n8n** | n8n.strali.solutions | nginx proxy injection | `n8n-custom/nginx.conf` |
 
-3. **Required Disclosures**: Your Imprint and Privacy Policy should include:
-   - AI interaction notice (users are interacting with AI, not humans)
-   - AI models used (e.g., Mistral, Llama, Phi-3)
-   - Data processing information (local processing, no third-party AI)
-   - Deployer responsibility information
-   - EU AI Act compliance statement
+### How Each Implementation Works
+
+**1. OpenWebUI (loader.js)**
+
+A custom JavaScript file is mounted into OpenWebUI that injects a legal footer on every page, including the login screen:
+
+```javascript
+// static/loader.js - Auto-injects footer with legal links
+footer.innerHTML = 'By using this service, you agree to our <a href="...">Imprint</a> and <a href="...">Privacy Policy</a>.';
+```
+
+Additionally, the `WEBUI_BANNERS` environment variable displays a dismissible info banner after login.
+
+**2. Semantic Search (HTML)**
+
+The search interface includes a fixed-position footer directly in the HTML:
+
+```html
+<footer style="position: fixed; bottom: 0; ...">
+    This service uses AI for semantic search. By using this service, you agree to our
+    <a href="https://strali.solutions/impressum">Imprint</a> and
+    <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
+</footer>
+```
+
+**3. n8n (nginx proxy)**
+
+Since n8n doesn't support custom HTML injection, an nginx reverse proxy (`n8n-proxy`) intercepts responses and injects the footer using `sub_filter`:
+
+```nginx
+# n8n-custom/nginx.conf
+sub_filter '</body>' '<div id="n8n-legal-footer">...legal links...</div></body>';
+sub_filter_once on;
+sub_filter_types text/html;
+proxy_set_header Accept-Encoding "";  # Disable gzip for sub_filter to work
+```
+
+The Cloudflare Tunnel points to `n8n-proxy:5679` instead of `n8n:5678` directly.
+
+### Required Disclosures
+
+Your Imprint and Privacy Policy should include:
+
+- **AI Interaction Notice**: Users are interacting with AI systems, not humans
+- **AI Platforms List**: All AI-powered services (chat, search, workflow automation)
+- **AI Models Used**: e.g., Mistral 7B, Llama 3 8B, Phi-3, nomic-embed-text
+- **Data Processing**: Local processing on own infrastructure, no third-party AI providers
+- **Deployer Responsibility**: Contact information for the responsible operator
+- **EU AI Act Compliance Statement**: Commitment to Article 50 transparency obligations
 
 ### Customizing Legal Links
 
-Edit `static/loader.js` to change the Imprint and Privacy Policy URLs:
-
+**OpenWebUI (loader.js):**
 ```javascript
+// Edit static/loader.js
 footer.innerHTML = 'By using this service, you agree to our <a href="https://your-domain.com/imprint" ...>Imprint</a> and <a href="https://your-domain.com/privacy" ...>Privacy Policy</a>.';
 ```
 
-Edit `docker-compose.yml` to update the banner content:
-
+**OpenWebUI Banner (docker-compose.yml):**
 ```yaml
-WEBUI_BANNERS: '[{"id": "legal-notice", "type": "info", "title": "", "content": "Your message with [links](https://example.com).", "dismissible": true, "timestamp": 1}]'
+WEBUI_BANNERS: '[{"id": "legal-notice", "type": "info", "content": "Your message with [links](https://example.com).", "dismissible": true, "timestamp": 1}]'
+```
+
+**Semantic Search (search.html):**
+```html
+<!-- Edit static/search.html footer section -->
+<a href="https://your-domain.com/imprint">Imprint</a>
+<a href="https://your-domain.com/privacy">Privacy Policy</a>
+```
+
+**n8n (nginx.conf):**
+```nginx
+# Edit n8n-custom/nginx.conf sub_filter line
+sub_filter '</body>' '<div id="n8n-legal-footer">...your links...</div></body>';
+```
+
+After editing, restart the affected services:
+```bash
+docker compose restart openwebui n8n-proxy
 ```
 
 ## Security Configuration
