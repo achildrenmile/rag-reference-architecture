@@ -30,8 +30,11 @@ services:
     image: ghcr.io/open-webui/mcpo:main
     container_name: mcpo
     command: --config /config/config.json
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
       - ./mcpo:/config:ro
+      - shared-data:/data
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
@@ -75,4 +78,6 @@ volumes:
   ollama-data:
     driver: local
   openwebui-data:
+    driver: local
+  shared-data:
     driver: local

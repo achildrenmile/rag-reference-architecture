@@ -294,36 +294,43 @@ ENABLE_RAG_HYBRID_SEARCH: "true"
 - CSV files
 - And more...
 
-## MCP Tools (Web Search)
+## MCP Tools
 
 ### Overview
 
-MCP (Model Context Protocol) allows LLMs to use external tools like web search. This setup uses MCPO (MCP-to-OpenAPI proxy) to connect OpenWebUI with MCP servers.
+MCP (Model Context Protocol) allows LLMs to use external tools like web search, file operations, and GitHub access. This setup uses MCPO (MCP-to-OpenAPI proxy) to connect OpenWebUI with MCP servers.
 
 ### Architecture
 
 ```
-OpenWebUI → MCPO (proxy) → DuckDuckGo MCP Server
+OpenWebUI → MCPO (proxy) → MCP Servers (DuckDuckGo, Filesystem, GitHub)
 ```
 
-### Configuration
+### Available MCP Servers
 
-| Component | Details |
-|-----------|---------|
-| MCPO | MCP-to-OpenAPI proxy server |
-| Search Provider | DuckDuckGo (no API key required) |
-| Port | 8000 (localhost only) |
+| Server | Description | API Key Required |
+|--------|-------------|------------------|
+| **duckduckgo** | Web search and content fetching | No |
+| **filesystem** | Read/write files in /data volume | No |
+| **github** | Repository access, issues, PRs | Optional (for rate limits) |
 
 ### Environment Variables
 
 ```yaml
 # Required for MCP tools to persist after restart
 WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+
+# Optional: GitHub token for higher API rate limits
+GITHUB_TOKEN: ${GITHUB_TOKEN:-}
 ```
 
-Generate a secret key:
+Generate keys:
 ```bash
+# WebUI secret key
 openssl rand -hex 32
+
+# GitHub token: https://github.com/settings/tokens
+# Scope: public_repo (read-only public repo access)
 ```
 
 ### MCPO Configuration
@@ -335,6 +342,17 @@ The MCPO config file (`mcpo/config.json`):
     "duckduckgo": {
       "command": "uvx",
       "args": ["duckduckgo-mcp-server"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
     }
   }
 }
@@ -343,49 +361,58 @@ The MCPO config file (`mcpo/config.json`):
 ### Setup in OpenWebUI
 
 1. Go to **Admin Settings** → **External Tools**
-2. Click **+ Add Server**
-3. Configure:
-   - **Type**: `OpenAPI`
-   - **URL**: `http://mcpo:8000/duckduckgo`
-   - **Auth**: `None`
-4. Save
+2. Click **+ Add Server** for each tool:
 
-### Using Web Search in Chat
+| Tool | Type | URL | Auth |
+|------|------|-----|------|
+| DuckDuckGo | OpenAPI | `http://mcpo:8000/duckduckgo` | None |
+| Filesystem | OpenAPI | `http://mcpo:8000/filesystem` | None |
+| GitHub | OpenAPI | `http://mcpo:8000/github` | None |
+
+### Using Tools in Chat
 
 1. Start a **New Chat**
 2. Click the **tools** button near the input field
-3. Enable the search tool
-4. Ask questions that need current information:
+3. Enable desired tools
+4. Example prompts:
    ```
    Search the web for latest AI news
+   List files in the /data directory
+   Get information about the tensorflow/tensorflow repository
    ```
 
-### Available Tools
+### Available Tool Functions
 
-| Tool | Description |
-|------|-------------|
-| `search` | Web search via DuckDuckGo |
+**DuckDuckGo:**
+| Function | Description |
+|----------|-------------|
+| `search` | Web search |
 | `fetch_content` | Fetch and parse web page content |
+
+**Filesystem:**
+| Function | Description |
+|----------|-------------|
+| `read_file` | Read file contents |
+| `write_file` | Write content to file |
+| `list_directory` | List directory contents |
+| `create_directory` | Create new directory |
+| `move_file` | Move/rename files |
+| `get_file_info` | Get file metadata |
+
+**GitHub:**
+| Function | Description |
+|----------|-------------|
+| `search_repositories` | Search GitHub repos |
+| `get_file_contents` | Read file from repo |
+| `list_issues` | List repository issues |
+| `get_issue` | Get issue details |
+| `create_issue` | Create new issue |
+| `list_pull_requests` | List PRs |
+| `get_pull_request` | Get PR details |
 
 ### Adding More MCP Servers
 
-Edit `mcpo/config.json` to add more tools:
-```json
-{
-  "mcpServers": {
-    "duckduckgo": {
-      "command": "uvx",
-      "args": ["duckduckgo-mcp-server"]
-    },
-    "another-tool": {
-      "command": "npx",
-      "args": ["-y", "@example/mcp-server"]
-    }
-  }
-}
-```
-
-Restart MCPO after changes:
+Edit `mcpo/config.json` and restart:
 ```bash
 docker compose restart mcpo
 ```
