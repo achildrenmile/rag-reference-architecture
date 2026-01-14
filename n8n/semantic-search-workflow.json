@@ -8,7 +8,7 @@
         "path": "search",
         "responseMode": "responseNode",
         "options": {
-          "allowedOrigins": "*"
+          "allowedOrigins": "https://gpt4strali.strali.solutions"
         }
       },
       "name": "Search Request",
@@ -18,16 +18,53 @@
     },
     {
       "parameters": {
+        "jsCode": "// Input validation\nconst body = $input.first().json.body || {};\nconst query = body.query;\nconst limit = body.limit;\n\n// Validate query is a non-empty string\nif (typeof query !== 'string' || query.trim().length === 0) {\n  return [{\n    json: {\n      error: true,\n      message: 'Invalid query: must be a non-empty string'\n    }\n  }];\n}\n\n// Validate and sanitize query (max 1000 chars, no special patterns)\nconst sanitizedQuery = query.trim().slice(0, 1000);\n\n// Validate limit\nconst validLimit = Math.min(Math.max(parseInt(limit) || 5, 1), 20);\n\nreturn [{\n  json: {\n    query: sanitizedQuery,\n    limit: validLimit,\n    error: false\n  }\n}];"
+      },
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Check Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "http://ollama:11434/api/embeddings",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": \"{{ $json.body.query }}\"}"
+        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": {{ JSON.stringify($json.query) }}}"
       },
       "name": "Generate Query Embedding",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300]
+      "position": [900, 200]
     },
     {
       "parameters": {
@@ -35,36 +72,58 @@
         "url": "http://elasticsearch:9200/rag-demo/_search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"size\": {{ $('Search Request').item.json.body.limit || 5 }},\n  \"query\": {\n    \"script_score\": {\n      \"query\": {\"match_all\": {}},\n      \"script\": {\n        \"source\": \"cosineSimilarity(params.query_vector, 'embedding') + 1.0\",\n        \"params\": {\n          \"query_vector\": {{ JSON.stringify($json.embedding) }}\n        }\n      }\n    }\n  }\n}"
+        "jsonBody": "={\n  \"size\": {{ $('Validate Input').item.json.limit }},\n  \"query\": {\n    \"script_score\": {\n      \"query\": {\"match_all\": {}},\n      \"script\": {\n        \"source\": \"cosineSimilarity(params.query_vector, 'embedding') + 1.0\",\n        \"params\": {\n          \"query_vector\": {{ JSON.stringify($json.embedding) }}\n        }\n      }\n    }\n  }\n}"
       },
       "name": "Search Elasticsearch",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300]
+      "position": [1120, 200]
     },
     {
       "parameters": {
-        "jsCode": "const hits = $input.first().json.hits?.hits || [];\nconst results = hits.map(hit => ({\n  id: hit._id,\n  score: (hit._score - 1).toFixed(4),\n  title: hit._source?.title || 'Untitled',\n  content: hit._source?.content || '',\n  source: hit._source?.source || 'unknown',\n  timestamp: hit._source?.timestamp || null\n}));\n\nreturn [{\n  json: {\n    query: $('Search Request').item.json.body.query,\n    results: results,\n    total: hits.length\n  }\n}];"
+        "jsCode": "const hits = $input.first().json.hits?.hits || [];\nconst results = hits.map(hit => ({\n  id: hit._id,\n  score: (hit._score - 1).toFixed(4),\n  title: hit._source?.title || 'Untitled',\n  content: hit._source?.content || '',\n  source: hit._source?.source || 'unknown',\n  timestamp: hit._source?.timestamp || null\n}));\n\nreturn [{\n  json: {\n    query: $('Validate Input').item.json.query,\n    results: results,\n    total: hits.length\n  }\n}];"
       },
       "name": "Format Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [1340, 200]
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify($json) }}"
       },
-      "name": "Respond",
+      "name": "Respond Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1120, 300]
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: $json.message}) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 400]
     }
   ],
   "connections": {
     "Search Request": {
-      "main": [[{"node": "Generate Query Embedding", "type": "main", "index": 0}]]
+      "main": [[{"node": "Validate Input", "type": "main", "index": 0}]]
+    },
+    "Validate Input": {
+      "main": [[{"node": "Check Valid", "type": "main", "index": 0}]]
+    },
+    "Check Valid": {
+      "main": [
+        [{"node": "Generate Query Embedding", "type": "main", "index": 0}],
+        [{"node": "Respond Error", "type": "main", "index": 0}]
+      ]
     },
     "Generate Query Embedding": {
       "main": [[{"node": "Search Elasticsearch", "type": "main", "index": 0}]]
@@ -73,7 +132,7 @@
       "main": [[{"node": "Format Results", "type": "main", "index": 0}]]
     },
     "Format Results": {
-      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+      "main": [[{"node": "Respond Success", "type": "main", "index": 0}]]
     }
   },
   "settings": {"executionOrder": "v1"}
