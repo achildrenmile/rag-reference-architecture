@@ -471,18 +471,107 @@ docker compose up -d
 
 ### Backup Data
 
+#### Quick Backup (Online)
+
+Backup without stopping services using Docker containers to access volumes:
+
 ```bash
+cd ~/rag-reference-architecture
+BACKUP_NAME="rag-backup-$(date +%Y%m%d-%H%M%S)"
+
+# Backup configuration files
+tar -czvf /tmp/${BACKUP_NAME}-config.tar.gz \
+  docker-compose.yml .env mcpo/ static/ .gitignore README.md SECURITY.md
+
+# Backup OpenWebUI data (database, uploads, embeddings)
+docker run --rm \
+  -v rag-reference-architecture_openwebui-data:/data \
+  -v /tmp:/backup \
+  alpine tar -czvf /backup/${BACKUP_NAME}-openwebui.tar.gz -C /data .
+
+# Backup Ollama models (~11GB for default models)
+docker run --rm \
+  -v rag-reference-architecture_ollama-data:/data \
+  -v /tmp:/backup \
+  alpine tar -czvf /backup/${BACKUP_NAME}-ollama.tar.gz -C /data .
+
+# Backup Elasticsearch data
+docker run --rm \
+  -v rag-reference-architecture_esdata:/data \
+  -v /tmp:/backup \
+  alpine tar -czvf /backup/${BACKUP_NAME}-esdata.tar.gz -C /data .
+
+# List backup files
+ls -lh /tmp/${BACKUP_NAME}*.tar.gz
+```
+
+#### Backup to Remote Storage
+
+Transfer backups to a NAS or remote server:
+
+```bash
+# Example: Transfer to NAS via SSH
+BACKUP_NAME="rag-backup-20260114-133206"  # Use your backup timestamp
+REMOTE_HOST="user@nas.example.com"
+REMOTE_PATH="/volume1/backups/rag-node-01"
+
+# Create remote directory
+ssh $REMOTE_HOST "mkdir -p $REMOTE_PATH"
+
+# Transfer files (using input redirection for compatibility)
+for file in /tmp/${BACKUP_NAME}*.tar.gz; do
+  ssh $REMOTE_HOST "cat > $REMOTE_PATH/$(basename $file)" < $file
+done
+
+# Verify transfer
+ssh $REMOTE_HOST "ls -lh $REMOTE_PATH"
+```
+
+#### Expected Backup Sizes
+
+| Component | Typical Size | Contents |
+|-----------|--------------|----------|
+| config | ~10 KB | docker-compose.yml, .env, mcpo/, static/ |
+| openwebui | ~1 GB | Database, uploads, embedding models cache |
+| ollama | ~11 GB | LLM models (mistral:7b, llama3:8b, phi3:mini) |
+| esdata | ~5 MB | Elasticsearch indices (grows with RAG usage) |
+
+#### Restore from Backup
+
+```bash
+cd ~/rag-reference-architecture
+BACKUP_NAME="rag-backup-20260114-133206"  # Use your backup timestamp
+BACKUP_PATH="/path/to/backups"  # Local path or mount point
+
 # Stop services
 docker compose down
 
-# Backup volumes
-sudo tar -czvf backup-$(date +%Y%m%d).tar.gz \
-  /var/lib/docker/volumes/rag-reference-architecture_esdata \
-  /var/lib/docker/volumes/rag-reference-architecture_ollama-data \
-  /var/lib/docker/volumes/rag-reference-architecture_openwebui-data
+# Restore configuration files
+tar -xzvf ${BACKUP_PATH}/${BACKUP_NAME}-config.tar.gz -C ~/rag-reference-architecture/
 
-# Restart services
+# Restore OpenWebUI data
+docker run --rm \
+  -v rag-reference-architecture_openwebui-data:/data \
+  -v ${BACKUP_PATH}:/backup \
+  alpine sh -c "rm -rf /data/* && tar -xzvf /backup/${BACKUP_NAME}-openwebui.tar.gz -C /data"
+
+# Restore Ollama models
+docker run --rm \
+  -v rag-reference-architecture_ollama-data:/data \
+  -v ${BACKUP_PATH}:/backup \
+  alpine sh -c "rm -rf /data/* && tar -xzvf /backup/${BACKUP_NAME}-ollama.tar.gz -C /data"
+
+# Restore Elasticsearch data
+docker run --rm \
+  -v rag-reference-architecture_esdata:/data \
+  -v ${BACKUP_PATH}:/backup \
+  alpine sh -c "rm -rf /data/* && tar -xzvf /backup/${BACKUP_NAME}-esdata.tar.gz -C /data"
+
+# Start services
 docker compose up -d
+
+# Verify services
+docker ps
 ```
 
 ### Restart Services
