@@ -9,11 +9,10 @@ Internet
     ↓
 Cloudflare Tunnel (cloudflared)
     ↓
-OpenWebUI (Chat Interface)
-    ↓
-Ollama (Local LLM Runtime)
-    ↓
-Elasticsearch (Hybrid Search)
+OpenWebUI (Chat Interface + RAG)
+    ↓                ↓
+Ollama          Elasticsearch
+(LLM Runtime)   (Vector Store)
 ```
 
 ### Key Properties
@@ -224,9 +223,10 @@ Access your instance at: `https://gpt4strali.your-domain.com`
 ### Elasticsearch
 
 - **Port**: 9200 (localhost only)
-- **Version**: 8.12.0
+- **Version**: 9.0.0
 - **Memory**: 4GB heap (configurable)
 - **Security**: Disabled (internal use only)
+- **Role**: Vector store for RAG (document embeddings)
 
 ### Ollama
 
@@ -240,12 +240,57 @@ Access your instance at: `https://gpt4strali.your-domain.com`
 - **Backend**: Connects to Ollama via Docker network
 - **Data**: Persisted in Docker volume
 - **Customizations**: Legal footer via `static/loader.js`
+- **RAG**: Elasticsearch vector store with hybrid search enabled
 
 ### Cloudflared
 
 - **Function**: Secure tunnel to Cloudflare edge
 - **Protocol**: QUIC
 - **Authentication**: Token-based
+
+## RAG (Retrieval-Augmented Generation)
+
+### Overview
+
+RAG allows users to chat with their own documents. The system retrieves relevant content from uploaded documents and uses it as context for LLM responses.
+
+### Configuration
+
+| Setting | Value |
+|---------|-------|
+| Vector Database | Elasticsearch 9.0.0 |
+| Embedding Model | `sentence-transformers/all-MiniLM-L6-v2` |
+| Hybrid Search | Enabled (BM25 + vector search) |
+
+### Environment Variables
+
+```yaml
+VECTOR_DB: elasticsearch
+ELASTICSEARCH_URL: http://elasticsearch:9200
+ENABLE_RAG_HYBRID_SEARCH: "true"
+```
+
+### How to Use
+
+1. **Upload Documents**:
+   - Go to **Workspace** → **Knowledge**
+   - Create a new knowledge base
+   - Upload documents (PDF, TXT, DOCX, MD, CSV, etc.)
+
+2. **Chat with Documents**:
+   - Start a new chat
+   - Type `#` to see available knowledge bases
+   - Select a knowledge base to include as context
+   - Ask questions about your documents
+
+### Supported File Types
+
+- PDF documents
+- Plain text (.txt)
+- Markdown (.md)
+- Word documents (.docx)
+- CSV files
+- And more...
 
 ## Legal Compliance
 
@@ -399,11 +444,12 @@ Use `.env.example` as a template for required environment variables.
 
 ## Future Enhancements
 
-- [ ] Document ingestion pipeline
+- [x] ~~Document ingestion pipeline~~ (via OpenWebUI Knowledge)
+- [x] ~~Embedding generation~~ (sentence-transformers)
+- [x] ~~RAG query integration~~ (Elasticsearch vector store)
 - [ ] MCP services for tool access
-- [ ] Embedding generation
-- [ ] RAG query integration
 - [ ] GPU acceleration support
+- [ ] Custom embedding models
 
 ## License
 
