@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Semantic Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e7;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 2rem;
+        }
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #374151;
+            border-radius: 8px;
+            background: #1f2937;
+            color: #fff;
+            font-size: 1rem;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        button {
+            padding: 1rem 2rem;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+        }
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .result-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .result-title {
+            font-weight: 600;
+            color: #fff;
+        }
+        .result-score {
+            background: #059669;
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+        }
+        .result-content {
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        .result-meta {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+        }
+        .error {
+            background: #7f1d1d;
+            border: 1px solid #dc2626;
+            color: #fecaca;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .info {
+            background: #1e3a5f;
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        .pipeline {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .pipeline-step {
+            background: #374151;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .pipeline-arrow {
+            color: #6b7280;
+            line-height: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 RAG Semantic Search</h1>
+        <p class="subtitle">Search documents using AI-powered vector similarity</p>
+
+        <div class="pipeline">
+            <span class="pipeline-step">Query</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step">Embed (Ollama)</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step">Vector Search</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step">Results</span>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="query" placeholder="Enter your search query..." autofocus>
+            <button id="searchBtn" onclick="search()">Search</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://n8n.strali.solutions/webhook/search';
+
+        document.getElementById('query').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') search();
+        });
+
+        async function search() {
+            const query = document.getElementById('query').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Searching...';
+            resultsDiv.innerHTML = '<div class="loading">🔄 Generating embedding and searching...</div>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, limit: 5 })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}<br><br>Make sure the "Semantic Search API" workflow is active in n8n.</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Search';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data.results || data.results.length === 0) {
+                resultsDiv.innerHTML = '<div class="info">No results found. Try ingesting some documents first using the RAG Ingestion Pipeline.</div>';
+                return;
+            }
+
+            const html = data.results.map(r => `
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="result-title">${escapeHtml(r.title)}</span>
+                        <span class="result-score">${(r.score * 100).toFixed(1)}% match</span>
+                    </div>
+                    <div class="result-content">${escapeHtml(r.content)}</div>
+                    <div class="result-meta">
+                        Source: ${escapeHtml(r.source)} • ${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'Unknown date'}
+                    </div>
+                </div>
+            `).join('');
+
+            resultsDiv.innerHTML = `
+                <div class="info">Found ${data.total} result(s) for: "${escapeHtml(data.query)}"</div>
+                <div class="results">${html}</div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

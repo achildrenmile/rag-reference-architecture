@@ -1,0 +1,80 @@
+{
+  "name": "Semantic Search API",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "search",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "name": "Search Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": \"{{ $json.body.query }}\"}"
+      },
+      "name": "Generate Query Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://elasticsearch:9200/rag-demo/_search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"size\": {{ $('Search Request').item.json.body.limit || 5 }},\n  \"query\": {\n    \"script_score\": {\n      \"query\": {\"match_all\": {}},\n      \"script\": {\n        \"source\": \"cosineSimilarity(params.query_vector, 'embedding') + 1.0\",\n        \"params\": {\n          \"query_vector\": {{ JSON.stringify($json.embedding) }}\n        }\n      }\n    }\n  }\n}"
+      },
+      "name": "Search Elasticsearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const hits = $input.first().json.hits?.hits || [];\nconst results = hits.map(hit => ({\n  id: hit._id,\n  score: (hit._score - 1).toFixed(4),\n  title: hit._source?.title || 'Untitled',\n  content: hit._source?.content || '',\n  source: hit._source?.source || 'unknown',\n  timestamp: hit._source?.timestamp || null\n}));\n\nreturn [{\n  json: {\n    query: $('Search Request').item.json.body.query,\n    results: results,\n    total: hits.length\n  }\n}];"
+      },
+      "name": "Format Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Search Request": {
+      "main": [[{"node": "Generate Query Embedding", "type": "main", "index": 0}]]
+    },
+    "Generate Query Embedding": {
+      "main": [[{"node": "Search Elasticsearch", "type": "main", "index": 0}]]
+    },
+    "Search Elasticsearch": {
+      "main": [[{"node": "Format Results", "type": "main", "index": 0}]]
+    },
+    "Format Results": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"}
+}

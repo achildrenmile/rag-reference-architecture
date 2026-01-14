@@ -1,0 +1,89 @@
+{
+  "name": "Scheduled RSS Ingestion",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hours", "hoursInterval": 6}]
+        }
+      },
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.feedUrl || 'https://hnrss.org/newest?points=100' }}",
+        "options": {}
+      },
+      "name": "Fetch RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process RSS items into documents\nconst items = $input.all();\nconst documents = [];\n\nfor (const item of items.slice(0, 5)) { // Limit to 5 items per run\n  const data = item.json;\n  documents.push({\n    json: {\n      title: data.title || 'Untitled',\n      content: (data.contentSnippet || data.content || data.description || '').slice(0, 2000),\n      source: 'rss:' + (data.link || 'unknown'),\n      link: data.link,\n      pubDate: data.pubDate || new Date().toISOString()\n    }\n  });\n}\n\nreturn documents;"
+      },
+      "name": "Process Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Chunk content for embedding\nconst doc = $input.first().json;\nconst content = doc.content;\nconst title = doc.title;\nconst source = doc.source;\n\nconst chunkSize = 500;\nconst chunks = [];\nlet start = 0;\nlet idx = 0;\n\nwhile (start < content.length) {\n  const chunkContent = content.slice(start, start + chunkSize);\n  chunks.push({\n    json: {\n      chunk_id: title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50) + '_' + idx,\n      chunk_index: idx,\n      content: chunkContent,\n      title: title,\n      source: source,\n      timestamp: new Date().toISOString()\n    }\n  });\n  start += chunkSize - 50;\n  idx++;\n}\n\nreturn chunks.length ? chunks : [{\n  json: {\n    chunk_id: title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50) + '_0',\n    chunk_index: 0,\n    content: content || 'No content',\n    title: title,\n    source: source,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Chunk Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": \"{{ $json.content }}\"}"
+      },
+      "name": "Generate Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://elasticsearch:9200/rag-demo/_doc/{{ $('Chunk Content').item.json.chunk_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chunk_id\": \"{{ $('Chunk Content').item.json.chunk_id }}\",\n  \"chunk_index\": {{ $('Chunk Content').item.json.chunk_index }},\n  \"content\": {{ JSON.stringify($('Chunk Content').item.json.content) }},\n  \"title\": {{ JSON.stringify($('Chunk Content').item.json.title) }},\n  \"source\": {{ JSON.stringify($('Chunk Content').item.json.source) }},\n  \"timestamp\": \"{{ $('Chunk Content').item.json.timestamp }}\",\n  \"embedding\": {{ JSON.stringify($json.embedding) }}\n}"
+      },
+      "name": "Store in Elasticsearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {
+      "main": [[{"node": "Fetch RSS Feed", "type": "main", "index": 0}]]
+    },
+    "Fetch RSS Feed": {
+      "main": [[{"node": "Process Items", "type": "main", "index": 0}]]
+    },
+    "Process Items": {
+      "main": [[{"node": "Chunk Content", "type": "main", "index": 0}]]
+    },
+    "Chunk Content": {
+      "main": [[{"node": "Generate Embedding", "type": "main", "index": 0}]]
+    },
+    "Generate Embedding": {
+      "main": [[{"node": "Store in Elasticsearch", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"}
+}
