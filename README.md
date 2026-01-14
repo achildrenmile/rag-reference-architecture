@@ -55,10 +55,11 @@ Ollama          Elasticsearch
 ├── .gitignore             # Excluded files
 ├── static/
 │   └── loader.js          # Custom JS for legal footer injection
+├── mcpo/
+│   └── config.json        # MCPO MCP server configuration
 ├── CREDENTIALS.md         # Sensitive credentials (not in repo)
 ├── SECURITY-ASSESSMENT.md # Security assessment details (not in repo)
 ├── ingest/                # Document ingestion scripts (future)
-├── mcp/                   # MCP services (future)
 └── models/                # Model configurations (future)
 ```
 
@@ -292,6 +293,102 @@ ENABLE_RAG_HYBRID_SEARCH: "true"
 - CSV files
 - And more...
 
+## MCP Tools (Web Search)
+
+### Overview
+
+MCP (Model Context Protocol) allows LLMs to use external tools like web search. This setup uses MCPO (MCP-to-OpenAPI proxy) to connect OpenWebUI with MCP servers.
+
+### Architecture
+
+```
+OpenWebUI → MCPO (proxy) → DuckDuckGo MCP Server
+```
+
+### Configuration
+
+| Component | Details |
+|-----------|---------|
+| MCPO | MCP-to-OpenAPI proxy server |
+| Search Provider | DuckDuckGo (no API key required) |
+| Port | 8000 (localhost only) |
+
+### Environment Variables
+
+```yaml
+# Required for MCP tools to persist after restart
+WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+```
+
+Generate a secret key:
+```bash
+openssl rand -hex 32
+```
+
+### MCPO Configuration
+
+The MCPO config file (`mcpo/config.json`):
+```json
+{
+  "mcpServers": {
+    "duckduckgo": {
+      "command": "uvx",
+      "args": ["duckduckgo-mcp-server"]
+    }
+  }
+}
+```
+
+### Setup in OpenWebUI
+
+1. Go to **Admin Settings** → **External Tools**
+2. Click **+ Add Server**
+3. Configure:
+   - **Type**: `OpenAPI`
+   - **URL**: `http://mcpo:8000/duckduckgo`
+   - **Auth**: `None`
+4. Save
+
+### Using Web Search in Chat
+
+1. Start a **New Chat**
+2. Click the **tools** button near the input field
+3. Enable the search tool
+4. Ask questions that need current information:
+   ```
+   Search the web for latest AI news
+   ```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `search` | Web search via DuckDuckGo |
+| `fetch_content` | Fetch and parse web page content |
+
+### Adding More MCP Servers
+
+Edit `mcpo/config.json` to add more tools:
+```json
+{
+  "mcpServers": {
+    "duckduckgo": {
+      "command": "uvx",
+      "args": ["duckduckgo-mcp-server"]
+    },
+    "another-tool": {
+      "command": "npx",
+      "args": ["-y", "@example/mcp-server"]
+    }
+  }
+}
+```
+
+Restart MCPO after changes:
+```bash
+docker compose restart mcpo
+```
+
 ## Legal Compliance
 
 ### EU AI Act (Article 50)
@@ -447,7 +544,7 @@ Use `.env.example` as a template for required environment variables.
 - [x] ~~Document ingestion pipeline~~ (via OpenWebUI Knowledge)
 - [x] ~~Embedding generation~~ (sentence-transformers)
 - [x] ~~RAG query integration~~ (Elasticsearch vector store)
-- [ ] MCP services for tool access
+- [x] ~~MCP services for tool access~~ (MCPO + DuckDuckGo)
 - [ ] GPU acceleration support
 - [ ] Custom embedding models
 
