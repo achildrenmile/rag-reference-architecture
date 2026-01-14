@@ -49,6 +49,7 @@ Elasticsearch (Hybrid Search)
 ```
 .
 ├── README.md              # This file (public documentation)
+├── SECURITY.md            # Security hardening guide (public)
 ├── docker-compose.yml     # Container orchestration
 ├── .env.example           # Environment variables template
 ├── .env                   # Actual environment variables (not in repo)
@@ -56,6 +57,7 @@ Elasticsearch (Hybrid Search)
 ├── static/
 │   └── loader.js          # Custom JS for legal footer injection
 ├── CREDENTIALS.md         # Sensitive credentials (not in repo)
+├── SECURITY-ASSESSMENT.md # Security assessment details (not in repo)
 ├── ingest/                # Document ingestion scripts (future)
 ├── mcp/                   # MCP services (future)
 └── models/                # Model configurations (future)

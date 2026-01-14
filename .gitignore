@@ -8,6 +8,9 @@ CREDENTIALS.md
 CREDENTIALS*.md
 secrets/
 
+# Security assessment (contains sensitive details)
+SECURITY-ASSESSMENT.md
+
 # Docker volumes (if local)
 data/
 volumes/
