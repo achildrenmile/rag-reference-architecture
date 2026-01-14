@@ -58,6 +58,9 @@ Ollama          Elasticsearch
 │   └── loader.js          # Custom JS for legal footer injection
 ├── mcpo/
 │   └── config.json        # MCPO MCP server configuration
+├── demo/
+│   ├── RAG_Architecture_Guide.md  # Knowledge base demo document
+│   └── prompt_templates.md        # Demo prompt templates
 ├── CREDENTIALS.md         # Sensitive credentials (not in repo)
 ├── SECURITY-ASSESSMENT.md # Security assessment details (not in repo)
 ├── ingest/                # Document ingestion scripts (future)
@@ -146,10 +149,15 @@ docker ps
 ### Step 7: Pull LLM Models
 
 ```bash
-# Pull recommended models
+# Pull core models
 docker exec ollama ollama pull mistral:7b
 docker exec ollama ollama pull llama3:8b
 docker exec ollama ollama pull phi3:mini
+
+# Pull optional specialized models
+docker exec ollama ollama pull codellama:7b   # Code generation
+docker exec ollama ollama pull llava:7b       # Vision/image understanding
+docker exec ollama ollama pull qwen2:1.5b     # Fast responses
 
 # Verify models
 docker exec ollama ollama list
@@ -233,7 +241,7 @@ Access your instance at: `https://gpt4strali.your-domain.com`
 ### Ollama
 
 - **Port**: 11434 (localhost only)
-- **Models**: mistral:7b, llama3:8b, phi3:mini
+- **Models**: See [Available Models](#available-models) section
 - **Data**: Persisted in Docker volume
 
 ### OpenWebUI
@@ -293,6 +301,24 @@ ENABLE_RAG_HYBRID_SEARCH: "true"
 - Word documents (.docx)
 - CSV files
 - And more...
+
+## Available Models
+
+| Model | Size | Best For |
+|-------|------|----------|
+| mistral:7b | 4.4 GB | General chat, reasoning |
+| llama3:8b | 4.7 GB | General purpose, longer context |
+| phi3:mini | 2.2 GB | Fast responses, resource-efficient |
+| codellama:7b | 3.8 GB | Code generation and analysis |
+| llava:7b | 4.7 GB | Image understanding, vision tasks |
+| qwen2:1.5b | 934 MB | Quick responses, low latency |
+
+### Model Selection Guide
+
+- **General Chat**: Use `mistral:7b` or `llama3:8b` for best quality
+- **Code Tasks**: Use `codellama:7b` for writing, debugging, and explaining code
+- **Image Analysis**: Use `llava:7b` for describing images, reading diagrams, OCR
+- **Fast Responses**: Use `qwen2:1.5b` or `phi3:mini` for quick interactions
 
 ## MCP Tools
 
@@ -416,6 +442,48 @@ Edit `mcpo/config.json` and restart:
 ```bash
 docker compose restart mcpo
 ```
+
+## Demo Resources
+
+### Demo Files
+
+The `/data/demo` directory contains sample files for demonstrating MCP filesystem capabilities:
+
+| File | Description |
+|------|-------------|
+| `welcome.md` | Welcome guide with feature overview |
+| `sample_data.csv` | Employee data for analysis demos |
+| `example.py` | Python code for code review demos |
+| `config.json` | JSON config for file reading demos |
+
+**Example prompts** (with filesystem tool enabled):
+```
+List all files in /data/demo and describe each one
+Read /data/demo/sample_data.csv and calculate the average salary by department
+Analyze the Python code in /data/demo/example.py and suggest improvements
+```
+
+### Knowledge Base Demo
+
+The `demo/RAG_Architecture_Guide.md` file contains a technical guide about this RAG system. Upload it to a Knowledge base to demonstrate RAG capabilities:
+
+1. Go to **Workspace** → **Knowledge**
+2. Create new knowledge base: "RAG Architecture"
+3. Upload `demo/RAG_Architecture_Guide.md`
+4. In chat, type `#RAG` and select the knowledge base
+5. Ask questions like: "What embedding model does this system use?"
+
+### Prompt Templates
+
+See `demo/prompt_templates.md` for ready-to-use prompts organized by category:
+
+- **General Chat**: Facts, creative writing, summarization
+- **Code Generation**: Python functions, debugging, code explanation
+- **Vision/Image**: Image description, diagram analysis, OCR
+- **Web Search**: Current events, research, fact checking
+- **Filesystem**: File listing, data analysis, file creation
+- **GitHub**: Repository info, code search, issue viewing
+- **RAG**: Document Q&A, multi-document analysis
 
 ## Legal Compliance
 
@@ -699,7 +767,10 @@ Use `.env.example` as a template for required environment variables.
 - [x] ~~Document ingestion pipeline~~ (via OpenWebUI Knowledge)
 - [x] ~~Embedding generation~~ (sentence-transformers)
 - [x] ~~RAG query integration~~ (Elasticsearch vector store)
-- [x] ~~MCP services for tool access~~ (MCPO + DuckDuckGo)
+- [x] ~~MCP services for tool access~~ (MCPO + DuckDuckGo, Filesystem, GitHub)
+- [x] ~~Vision model~~ (llava:7b for image understanding)
+- [x] ~~Code generation model~~ (codellama:7b)
+- [x] ~~Demo resources~~ (prompt templates, sample files)
 - [ ] GPU acceleration (AMD 780M iGPU - experimental ROCm support)
 - [ ] Custom embedding models
 
