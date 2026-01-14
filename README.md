@@ -879,6 +879,94 @@ tail -50 ~/rag-reference-architecture/backup.log
 docker compose restart
 ```
 
+## Monitoring
+
+### Overview
+
+The platform is monitored via Uptime Kuma (external) with both HTTP endpoint checks and push-based monitors.
+
+### Monitored Services
+
+| Service | URL | Type | Description |
+|---------|-----|------|-------------|
+| OpenWebUI | `https://gpt4strali.strali.solutions` | HTTP | Main AI chat interface |
+| Semantic Search | `https://gpt4strali.strali.solutions/static/search.html` | HTTP | Vector search UI |
+| n8n | `https://n8n.strali.solutions` | HTTP | Workflow automation |
+| Elasticsearch | `http://192.168.1.32:9200` | HTTP | Vector database (LAN) |
+| Ollama | `http://192.168.1.32:11434/api/tags` | HTTP | LLM runtime (LAN) |
+| Disk Space | Push monitor | Push | Alerts if <10GB free |
+
+### LAN Access for Monitoring
+
+Elasticsearch and Ollama ports are bound to `0.0.0.0` to allow monitoring from the local network:
+
+```yaml
+elasticsearch:
+  ports:
+    - "0.0.0.0:9200:9200"  # LAN accessible
+
+ollama:
+  ports:
+    - "0.0.0.0:11434:11434"  # LAN accessible
+```
+
+### Disk Space Monitor
+
+A push-based monitor sends disk space status to Uptime Kuma every 5 minutes.
+
+**Script:** `scripts/disk-monitor.sh`
+
+**How it works:**
+- Checks free disk space on root partition
+- Pushes "up" status if ≥10GB free
+- Pushes "down" status if <10GB free (triggers alert)
+- Includes disk usage in status message
+
+**Systemd Timer:**
+```bash
+# Check timer status
+systemctl --user status disk-monitor.timer
+
+# View next run
+systemctl --user list-timers disk-monitor.timer
+
+# Run manually
+~/rag-reference-architecture/scripts/disk-monitor.sh
+```
+
+**Setup (if not already configured):**
+```bash
+# Create systemd user directory
+mkdir -p ~/.config/systemd/user
+
+# Create service file
+cat > ~/.config/systemd/user/disk-monitor.service << EOF
+[Unit]
+Description=Disk Space Monitor for Uptime Kuma
+
+[Service]
+Type=oneshot
+ExecStart=/home/oe8yml/rag-reference-architecture/scripts/disk-monitor.sh
+EOF
+
+# Create timer file
+cat > ~/.config/systemd/user/disk-monitor.timer << EOF
+[Unit]
+Description=Run disk monitor every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# Enable and start
+systemctl --user daemon-reload
+systemctl --user enable --now disk-monitor.timer
+```
+
 ## Troubleshooting
 
 ### Elasticsearch won't start
