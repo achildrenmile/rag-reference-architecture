@@ -1,274 +1,345 @@
-# GPT4Strali – Reference Architecture Setup Guide
+# RAG Reference Architecture
 
-This repository documents a complete, reproducible setup for a modern AI-assisted search and Retrieval-Augmented Generation (RAG) reference architecture using local LLMs, Elasticsearch, MCP-style tool access, and secure public exposure via Cloudflare Tunnel.
+A complete, reproducible setup for a modern AI-assisted search and Retrieval-Augmented Generation (RAG) system using local LLMs, Elasticsearch, and secure public exposure via Cloudflare Tunnel.
 
-The goal is to share practical, architecture-correct knowledge that can be reused with affordable hardware.
+## Architecture Overview
 
----
-
-ARCHITECTURE OVERVIEW
-
+```
 Internet
-↓
-Cloudflare Access (Login)
-↓
+    ↓
 Cloudflare Tunnel (cloudflared)
-↓
-OpenWebUI
-↓
+    ↓
+OpenWebUI (Chat Interface)
+    ↓
 Ollama (Local LLM Runtime)
-↓
-MCP Services (Tool Access)
-↓
+    ↓
 Elasticsearch (Hybrid Search)
+```
 
-Key properties:
-- No public inbound ports
-- HTTPS only
-- Login required
-- CPU-first inference
-- GPU optional (cloud or eGPU)
+### Key Properties
+
+- No public inbound ports required
+- HTTPS only via Cloudflare
+- Authentication at application level
+- CPU-first inference (GPU optional)
 - Docker-based deployment
+- Fully self-hosted
 
----
+## Target Environment
 
-TARGET ENVIRONMENT
+### Hardware Requirements
 
-Hardware:
-- Mini PC with AMD Ryzen 7 / Ryzen 9 CPU
-- Minimum 32 GB RAM
-- NVMe SSD
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | AMD Ryzen 7 / Intel i7 | AMD Ryzen 9 |
+| RAM | 32 GB | 64 GB |
+| Storage | 256 GB NVMe SSD | 512 GB+ NVMe SSD |
 
-Validated on:
-- GEEKOM A8 Max (Ryzen 9 8945HS)
+### Validated Hardware
 
-Operating System:
-- Ubuntu Server 22.04 LTS (headless)
+- GEEKOM A8 Max (AMD Ryzen 9 8945HS, 32GB RAM)
 
----
+### Operating System
 
-REPOSITORY STRUCTURE
+- Ubuntu Server 22.04 LTS or 24.04 LTS (headless)
 
-README.md
-docker-compose.yml
-ingest/
-mcp/
-models/
+## Repository Structure
 
----
+```
+.
+├── README.md              # This file (public documentation)
+├── docker-compose.yml     # Container orchestration
+├── .env.example           # Environment variables template
+├── .gitignore             # Excluded files
+├── ingest/                # Document ingestion scripts (future)
+├── mcp/                   # MCP services (future)
+└── models/                # Model configurations (future)
+```
 
-STEP 1 – BIOS AND OS INSTALLATION
+## Setup Guide
 
-1. Enter BIOS
+### Step 1: BIOS and OS Installation
+
+1. Enter BIOS:
    - Enable UEFI
    - Disable Secure Boot
-2. Boot from Ubuntu Server 22.04 LTS USB
-3. Install with:
+
+2. Install Ubuntu Server:
    - Minimal installation
    - OpenSSH enabled
-   - Full disk (LVM)
+   - Full disk with LVM
    - No disk encryption
-4. Reboot and log in via SSH
 
----
+3. Reboot and connect via SSH
 
-STEP 2 – BASE SYSTEM PREPARATION
+### Step 2: Base System Preparation
 
-Run as root or sudo user:
-
+```bash
+# Update system
 sudo apt update && sudo apt full-upgrade -y
+
+# Install dependencies
 sudo apt install -y ca-certificates curl gnupg git htop jq unzip build-essential net-tools
 
-Disable swap (recommended for Elasticsearch):
-
+# Disable swap (recommended for Elasticsearch)
 sudo swapoff -a
 sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
-Set required kernel parameter:
-
+# Set Elasticsearch kernel parameter
 sudo sysctl -w vm.max_map_count=262144
 echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-elasticsearch.conf
 
-Reboot once after this step.
+# Reboot
+sudo reboot
+```
 
----
+### Step 3: Docker Installation
 
-STEP 3 – DOCKER INSTALLATION
-
-Install Docker:
-
+```bash
+# Install Docker
 curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker \$USER
+sudo usermod -aG docker $USER
 newgrp docker
 
-Verify:
-
+# Verify installation
 docker version
+```
 
----
+### Step 4: Clone Repository
 
-STEP 4 – DOCKER COMPOSE STACK
+```bash
+git clone https://github.com/YOUR_USERNAME/rag-reference-architecture.git
+cd rag-reference-architecture
+```
 
-Create docker-compose.yml with the following content:
+### Step 5: Configure Environment
 
-version: "3.8"
+```bash
+# Copy environment template
+cp .env.example .env
 
-services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms8g -Xmx8g"
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
-    ports:
-      - "127.0.0.1:9200:9200"
-    mem_limit: 12g
+# Edit with your values
+nano .env
+```
 
-  openwebui:
-    image: ghcr.io/open-webui/open-webui:main
-    environment:
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
-    ports:
-      - "127.0.0.1:3000:8080"
-    depends_on:
-      - elasticsearch
+Required variables (see `.env.example` for details):
+- `TUNNEL_TOKEN` - Cloudflare Tunnel token
 
-volumes:
-  esdata:
+### Step 6: Start Services
 
-Start the stack:
-
+```bash
+# Start all containers
 docker compose up -d
 
-Verify Elasticsearch:
+# Verify services are running
+docker ps
+```
 
+### Step 7: Pull LLM Models
+
+```bash
+# Pull recommended models
+docker exec ollama ollama pull mistral:7b
+docker exec ollama ollama pull llama3:8b
+docker exec ollama ollama pull phi3:mini
+
+# Verify models
+docker exec ollama ollama list
+```
+
+### Step 8: Verify Services
+
+```bash
+# Check Elasticsearch
 curl http://localhost:9200
 
----
+# Check Ollama
+curl http://localhost:11434/api/tags
 
-STEP 5 – OLLAMA (LOCAL LLM RUNTIME)
+# Check OpenWebUI
+curl -I http://localhost:3000
+```
 
-Install Ollama:
+### Step 9: OpenWebUI Initial Setup
 
-curl -fsSL https://ollama.com/install.sh | sh
-sudo systemctl enable ollama
-sudo systemctl start ollama
+1. Access OpenWebUI at `http://localhost:3000` (or via your tunnel URL)
+2. Create admin account on first access
+3. Configure settings:
+   - **Admin Settings** → **General** → Disable "Enable New Sign Ups"
+   - Create additional users as needed
 
-Pull models:
+### Step 10: Cloudflare Tunnel Setup
 
-ollama pull mistral:7b
-ollama pull llama3:8b
+#### Create Tunnel in Cloudflare Dashboard
 
-Test:
+1. Go to [Cloudflare Zero Trust](https://one.dash.cloudflare.com/)
+2. Navigate to **Networks** → **Tunnels** → **Create a tunnel**
+3. Choose **Cloudflared** connector
+4. Name your tunnel (e.g., `rag-node-01`)
+5. Copy the tunnel token
 
-ollama run mistral
+#### Configure Public Hostname
 
----
+1. In tunnel settings, go to **Public Hostname** tab
+2. Add hostname:
+   - **Subdomain**: `rag` (or your choice)
+   - **Domain**: `your-domain.com`
+   - **Service Type**: HTTP
+   - **URL**: `openwebui:8080`
 
-STEP 6 – OPENWEBUI SETUP
+> **Important**: Use container name `openwebui:8080`, not `localhost:3000`
 
-1. ssh -L 3000:localhost:3000 user@yourservername
-2. Open http://localhost:3000
-3. Create admin account
-4. Disable public signup
-5. Create demo users if required
+#### Add Token to Environment
 
----
+```bash
+# Edit .env file
+nano .env
 
-STEP 7 – INGESTION AND EMBEDDINGS
+# Add your tunnel token
+TUNNEL_TOKEN=eyJhIjo...your_token_here
+```
 
-Install dependencies:
+#### Restart Cloudflared
 
-pip install sentence-transformers elasticsearch
+```bash
+docker compose up -d cloudflared
+docker logs cloudflared
+```
 
-Example ingestion logic:
-- Load documents
-- Generate embeddings
-- Store text + vector in Elasticsearch
+Look for: `INF Registered tunnel connection`
 
----
+### Step 11: Verify Public Access
 
-STEP 8 – MCP SERVICES (OPTIONAL BUT RECOMMENDED)
+Access your instance at: `https://rag.your-domain.com`
 
-Create a small service exposing controlled search or tools using FastAPI.
-This service is called by the LLM to access external capabilities without direct system access.
+## Service Details
 
----
+### Elasticsearch
 
-STEP 9 – CLOUDFLARE TUNNEL (PUBLIC ACCESS)
+- **Port**: 9200 (localhost only)
+- **Version**: 8.12.0
+- **Memory**: 4GB heap (configurable)
+- **Security**: Disabled (internal use only)
 
-Install cloudflared:
+### Ollama
 
-sudo apt install -y cloudflared
+- **Port**: 11434 (localhost only)
+- **Models**: mistral:7b, llama3:8b, phi3:mini
+- **Data**: Persisted in Docker volume
 
-Authenticate:
+### OpenWebUI
 
-cloudflared tunnel login
+- **Port**: 3000 (localhost only)
+- **Backend**: Connects to Ollama via Docker network
+- **Data**: Persisted in Docker volume
 
-Create tunnel:
+### Cloudflared
 
-cloudflared tunnel create gpt4strali
+- **Function**: Secure tunnel to Cloudflare edge
+- **Protocol**: QUIC
+- **Authentication**: Token-based
 
-Configure /etc/cloudflared/config.yml:
+## Security Configuration
 
-tunnel: <TUNNEL_ID>
-credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+### Network Security
 
-ingress:
-  - hostname: gpt4strali.strali.solutions
-    service: http://localhost:3000
-  - service: http_status:404
+- All services bound to `127.0.0.1` (localhost only)
+- No public inbound ports required
+- Cloudflare Tunnel provides secure ingress
 
-Create DNS route:
+### Application Security
 
-cloudflared tunnel route dns gpt4strali gpt4strali.strali.solutions
+- OpenWebUI: User authentication required
+- Public signup: Disabled by default
+- Admin creates user accounts manually
 
-Enable service:
+### Access Control Options
 
-sudo cloudflared service install
-sudo systemctl enable cloudflared
-sudo systemctl start cloudflared
+| Method | Description |
+|--------|-------------|
+| **OpenWebUI Auth Only** | Users need credentials to login |
+| **Cloudflare Access** | Additional authentication layer (requires payment method) |
+| **Shared Demo Account** | Single demo user for controlled sharing |
 
----
+## Maintenance
 
-STEP 10 – CLOUDFLARE ACCESS (LOGIN PROTECTION)
+### View Logs
 
-1. Enable Cloudflare Zero Trust
-2. Create Access Application
-   - Type: Self-hosted
-   - Domain: gpt4strali.strali.solutions
-3. Configure access policy:
-   - Email allowlist or domain restriction
-   - Optional OTP or SSO
-4. Set session lifetime to 8–24 hours
+```bash
+# All services
+docker compose logs -f
 
----
+# Specific service
+docker compose logs -f openwebui
+```
 
-SECURITY CHECKLIST
+### Update Services
 
-- No public inbound ports
-- All services bound to localhost
-- Cloudflare Access enforced
-- OpenWebUI authentication enabled
-- System survives reboot
+```bash
+docker compose pull
+docker compose up -d
+```
 
----
+### Backup Data
 
-RECOMMENDED OPERATING MODE
+```bash
+# Stop services
+docker compose down
 
-- CPU-first inference
-- Quantized 7B–8B models
-- GPU optional via cloud or eGPU
-- Architecture remains identical across deployments
+# Backup volumes
+sudo tar -czvf backup-$(date +%Y%m%d).tar.gz \
+  /var/lib/docker/volumes/rag-reference-architecture_esdata \
+  /var/lib/docker/volumes/rag-reference-architecture_ollama-data \
+  /var/lib/docker/volumes/rag-reference-architecture_openwebui-data
 
----
+# Restart services
+docker compose up -d
+```
 
-STATUS
+### Restart Services
 
-This setup is:
-- Secure
-- Reproducible
-- Demo-ready
-- Production-grade in architecture
+```bash
+docker compose restart
+```
+
+## Troubleshooting
+
+### Elasticsearch won't start
+
+```bash
+# Check vm.max_map_count
+cat /proc/sys/vm/max_map_count
+# Should be 262144
+
+# Fix if needed
+sudo sysctl -w vm.max_map_count=262144
+```
+
+### Cloudflared not connecting
+
+```bash
+# Check logs
+docker logs cloudflared
+
+# Verify token is set
+docker exec cloudflared printenv TUNNEL_TOKEN
+```
+
+### OpenWebUI can't reach Ollama
+
+```bash
+# Verify Ollama is running
+docker exec openwebui curl http://ollama:11434/api/tags
+```
+
+## Future Enhancements
+
+- [ ] Document ingestion pipeline
+- [ ] MCP services for tool access
+- [ ] Embedding generation
+- [ ] RAG query integration
+- [ ] GPU acceleration support
+
+## License
+
+MIT License - See LICENSE file for details.
