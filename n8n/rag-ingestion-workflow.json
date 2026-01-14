@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "ingest",
+        "responseMode": "responseNode",
         "options": {}
       },
       "id": "webhook-trigger",
@@ -114,41 +115,15 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "response",
-              "name": "status",
-              "value": "success",
-              "type": "string"
-            },
-            {
-              "id": "message",
-              "name": "message",
-              "value": "=Document ingested: {{ $('Extract Metadata').item.json.title }} ({{ $('Chunk Text').all().length }} chunks)",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "response-node",
-      "name": "Success Response",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [1560, 300]
-    },
-    {
-      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ $json }}",
+        "responseBody": "={\"status\": \"success\", \"message\": \"Document ingested\", \"chunks_processed\": {{ $('Chunk Text').all().length }}}",
         "options": {}
       },
       "id": "respond-webhook",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1780, 300]
+      "position": [1560, 300]
     }
   ],
   "connections": {
@@ -208,17 +183,6 @@
       ]
     },
     "Store in Elasticsearch": {
-      "main": [
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Success Response": {
       "main": [
         [
           {
