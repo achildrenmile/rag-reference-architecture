@@ -9,7 +9,7 @@ services:
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
-      - "127.0.0.1:9200:9200"
+      - "0.0.0.0:9200:9200"  # LAN accessible for monitoring
     mem_limit: 8g
     ulimits:
       memlock:
@@ -23,7 +23,7 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     ports:
-      - "127.0.0.1:11434:11434"
+      - "0.0.0.0:11434:11434"  # LAN accessible for monitoring
     restart: unless-stopped
 
   mcpo:
