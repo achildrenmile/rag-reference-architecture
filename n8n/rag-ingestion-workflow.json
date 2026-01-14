@@ -1,0 +1,240 @@
+{
+  "name": "RAG Document Ingestion Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ingest",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Document Upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "rag-ingest"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "doc-content",
+              "name": "content",
+              "value": "={{ $json.body.content }}",
+              "type": "string"
+            },
+            {
+              "id": "doc-title",
+              "name": "title",
+              "value": "={{ $json.body.title || 'Untitled Document' }}",
+              "type": "string"
+            },
+            {
+              "id": "doc-source",
+              "name": "source",
+              "value": "={{ $json.body.source || 'n8n-upload' }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-metadata",
+      "name": "Extract Metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Chunk text into smaller pieces for embedding\nconst content = $input.first().json.content;\nconst title = $input.first().json.title;\nconst source = $input.first().json.source;\nconst timestamp = $input.first().json.timestamp;\n\n// Chunk settings\nconst chunkSize = 500; // characters per chunk\nconst chunkOverlap = 50; // overlap between chunks\n\nconst chunks = [];\nlet start = 0;\nlet chunkIndex = 0;\n\nwhile (start < content.length) {\n  const end = Math.min(start + chunkSize, content.length);\n  const chunkText = content.slice(start, end);\n  \n  chunks.push({\n    json: {\n      chunk_id: `${title.replace(/\\s+/g, '_')}_chunk_${chunkIndex}`,\n      chunk_index: chunkIndex,\n      content: chunkText,\n      title: title,\n      source: source,\n      timestamp: timestamp,\n      total_chunks: Math.ceil(content.length / (chunkSize - chunkOverlap))\n    }\n  });\n  \n  start += chunkSize - chunkOverlap;\n  chunkIndex++;\n}\n\nreturn chunks;"
+      },
+      "id": "chunk-text",
+      "name": "Chunk Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"{{ $json.content }}\"\n}",
+        "options": {}
+      },
+      "id": "generate-embedding",
+      "name": "Generate Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "merge-data",
+              "name": "document",
+              "value": "={\n  \"chunk_id\": \"{{ $('Chunk Text').item.json.chunk_id }}\",\n  \"chunk_index\": {{ $('Chunk Text').item.json.chunk_index }},\n  \"content\": \"{{ $('Chunk Text').item.json.content.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }}\",\n  \"title\": \"{{ $('Chunk Text').item.json.title }}\",\n  \"source\": \"{{ $('Chunk Text').item.json.source }}\",\n  \"timestamp\": \"{{ $('Chunk Text').item.json.timestamp }}\",\n  \"embedding\": {{ JSON.stringify($json.embedding) }}\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "merge-embedding",
+      "name": "Merge Embedding",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://elasticsearch:9200/rag-demo/_doc/{{ $json.document.chunk_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.document) }}",
+        "options": {}
+      },
+      "id": "store-elasticsearch",
+      "name": "Store in Elasticsearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "response",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "=Document ingested: {{ $('Extract Metadata').item.json.title }} ({{ $('Chunk Text').all().length }} chunks)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "response-node",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Document Upload": {
+      "main": [
+        [
+          {
+            "node": "Extract Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Metadata": {
+      "main": [
+        [
+          {
+            "node": "Chunk Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Text": {
+      "main": [
+        [
+          {
+            "node": "Generate Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Embedding": {
+      "main": [
+        [
+          {
+            "node": "Merge Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Embedding": {
+      "main": [
+        [
+          {
+            "node": "Store in Elasticsearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in Elasticsearch": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "pinData": {}
+}
