@@ -32,7 +32,7 @@ services:
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       WEBUI_NAME: GPT4Strali
-      WEBUI_BANNERS: '[{"id": "demo-warning", "type": "warning", "title": "", "content": "<b>DEMO - DO NOT</b> share sensitive information", "dismissible": false, "timestamp": 1}, {"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our <a href=\"https://strali.solutions/impressum\"><b>Imprint</b></a> and <a href=\"https://strali.solutions/datenschutz\"><b>Privacy Policy</b></a>.", "dismissible": true, "timestamp": 1}]'
+      WEBUI_BANNERS: '[{"id": "demo-warning", "type": "warning", "title": "", "content": "𝗗𝗘𝗠𝗢 - 𝗗𝗢 𝗡𝗢𝗧 share sensitive information", "dismissible": false, "timestamp": 1}, {"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our [𝗜𝗺𝗽𝗿𝗶𝗻𝘁](https://strali.solutions/impressum) and [𝗣𝗿𝗶𝘃𝗮𝗰𝘆 𝗣𝗼𝗹𝗶𝗰𝘆](https://strali.solutions/datenschutz).", "dismissible": true, "timestamp": 1}]'
     ports:
       - "127.0.0.1:3000:8080"
     depends_on:
