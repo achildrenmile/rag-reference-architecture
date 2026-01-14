@@ -1,0 +1,46 @@
+# Environment files with secrets
+.env
+.env.local
+.env.production
+
+# Credentials documentation
+CREDENTIALS.md
+CREDENTIALS*.md
+secrets/
+
+# Docker volumes (if local)
+data/
+volumes/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+backup*.tar.gz
+
+# Python (for future ingestion scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+.env/
+
+# Node (for future MCP services)
+node_modules/
+npm-debug.log
