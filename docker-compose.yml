@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
@@ -23,10 +21,8 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     volumes:
-      # Persist downloaded models
       - ollama-data:/root/.ollama
     ports:
-      # Optional: expose only to host
       - "127.0.0.1:11434:11434"
     restart: unless-stopped
 
@@ -34,16 +30,25 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     container_name: openwebui
     environment:
-      # Direct Docker-to-Docker communication
       OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_BANNERS: '[{"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our [Imprint](https://strali.solutions/impressum) and [Privacy Policy](https://strali.solutions/datenschutz).", "dismissible": true, "timestamp": 1}]'
     ports:
       - "127.0.0.1:3000:8080"
     depends_on:
       - elasticsearch
       - ollama
     volumes:
-      # Persist users, chats, settings
       - openwebui-data:/app/backend/data
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - openwebui
     restart: unless-stopped
 
 volumes:
