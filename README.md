@@ -8,8 +8,9 @@ A complete, reproducible setup for a modern AI-assisted search and Retrieval-Aug
 Internet
     ↓
 Cloudflare Tunnel (cloudflared)
-    ↓
-OpenWebUI (Chat Interface + RAG)
+    ↓                    ↓
+OpenWebUI            n8n
+(Chat + RAG)    (Workflow Automation)
     ↓                ↓
 Ollama          Elasticsearch
 (LLM Runtime)   (Vector Store)
@@ -58,6 +59,8 @@ Ollama          Elasticsearch
 │   └── loader.js          # Custom JS for legal footer injection
 ├── mcpo/
 │   └── config.json        # MCPO MCP server configuration
+├── n8n/
+│   └── rag-ingestion-workflow.json  # RAG pipeline workflow template
 ├── demo/
 │   ├── RAG_Architecture_Guide.md  # Knowledge base demo document
 │   └── prompt_templates.md        # Demo prompt templates
@@ -442,6 +445,59 @@ Edit `mcpo/config.json` and restart:
 ```bash
 docker compose restart mcpo
 ```
+
+## n8n Workflow Automation
+
+### Overview
+
+n8n provides visual workflow automation for demonstrating the RAG pipeline. It shows how documents flow through ingestion, chunking, embedding, and storage.
+
+**Access**: https://n8n.strali.solutions
+
+### RAG Ingestion Pipeline
+
+The included workflow demonstrates the complete RAG process:
+
+```
+Document Upload → Extract Metadata → Chunk Text → Generate Embedding → Store in Elasticsearch
+     (webhook)                        (500 chars)    (nomic-embed-text)    (vector index)
+```
+
+### Using the Workflow
+
+**Via API (webhook):**
+```bash
+curl -X POST https://n8n.strali.solutions/webhook/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "My Document",
+    "content": "Document text content here...",
+    "source": "api"
+  }'
+```
+
+**Via n8n UI:**
+1. Log in to n8n
+2. Open "RAG Document Ingestion Pipeline" workflow
+3. View execution history to see document flow
+4. Test with the "Test workflow" button
+
+### Environment Variables
+
+```yaml
+N8N_WEBHOOK_URL: https://n8n.your-domain.com
+N8N_HOST: n8n.your-domain.com
+N8N_EDITOR_BASE_URL: https://n8n.your-domain.com
+```
+
+### Importing Workflows
+
+Import the RAG workflow from the repository:
+
+1. In n8n, click **Add workflow** (+)
+2. Click **⋮** menu → **Import from URL**
+3. URL: `https://raw.githubusercontent.com/achildrenmile/rag-reference-architecture/main/n8n/rag-ingestion-workflow.json`
+4. Activate the workflow
 
 ## Demo Resources
 
