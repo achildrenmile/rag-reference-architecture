@@ -56,11 +56,14 @@ Ollama          Elasticsearch
 ├── .env                   # Actual environment variables (not in repo)
 ├── .gitignore             # Excluded files
 ├── static/
-│   └── loader.js          # Custom JS for legal footer injection
+│   ├── loader.js          # Custom JS for legal footer injection
+│   └── search.html        # Semantic search UI
 ├── mcpo/
 │   └── config.json        # MCPO MCP server configuration
 ├── n8n/
-│   └── rag-ingestion-workflow.json  # RAG pipeline workflow template
+│   ├── rag-ingestion-workflow.json      # RAG pipeline workflow
+│   ├── semantic-search-workflow.json    # Vector search API workflow
+│   └── scheduled-ingestion-workflow.json # RSS auto-ingestion workflow
 ├── demo/
 │   ├── RAG_Architecture_Guide.md  # Knowledge base demo document
 │   └── prompt_templates.md        # Demo prompt templates
@@ -540,6 +543,46 @@ See `demo/prompt_templates.md` for ready-to-use prompts organized by category:
 - **Filesystem**: File listing, data analysis, file creation
 - **GitHub**: Repository info, code search, issue viewing
 - **RAG**: Document Q&A, multi-document analysis
+
+### Semantic Search UI
+
+A standalone search interface for querying the vector database directly:
+
+**Access**: https://gpt4strali.strali.solutions/static/search.html
+
+Features:
+- Direct vector similarity search against Elasticsearch
+- Shows cosine similarity scores as percentages
+- Visual pipeline display (Query → Embed → Search → Results)
+
+**Requirements**: The "Semantic Search API" workflow must be active in n8n.
+
+**API Endpoint**:
+```bash
+curl -X POST https://n8n.strali.solutions/webhook/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "your search query", "limit": 5}'
+```
+
+### Vision Model Demo (llava:7b)
+
+The `/data/demo/images/` directory contains a guide for demonstrating the vision model:
+
+1. In OpenWebUI, select **llava:7b** model
+2. Upload any image using the attachment button
+3. Try prompts like:
+   - "Describe this image in detail"
+   - "Extract all text visible in this image"
+   - "Explain the architecture shown in this diagram"
+
+### Scheduled RSS Ingestion
+
+Automatically ingest content from RSS feeds into the RAG pipeline:
+
+1. Import workflow: `n8n/scheduled-ingestion-workflow.json`
+2. Default: Fetches top Hacker News stories every 6 hours
+3. Customize the RSS URL in the "Fetch RSS Feed" node
+4. Activate to start automatic ingestion
 
 ## Legal Compliance
 
