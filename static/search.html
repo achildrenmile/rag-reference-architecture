@@ -263,14 +263,8 @@
             padding: 0.5rem 1rem;
             border-radius: 9999px;
             font-size: 0.85rem;
-            text-decoration: none !important;
             cursor: pointer;
             transition: all 0.3s ease;
-        }
-
-        .query-chip:visited {
-            color: var(--text-muted);
-            text-decoration: none !important;
         }
 
         .query-chip:hover {
@@ -425,10 +419,10 @@
         <div class="example-queries">
             <p>Try these queries:</p>
             <div class="query-chips">
-                <a class="query-chip" onclick="setQuery('How do I submit expenses?')">How do I submit expenses?</a>
-                <a class="query-chip" onclick="setQuery('What are the remote work policies?')">Remote work policies</a>
-                <a class="query-chip" onclick="setQuery('API authentication')">API authentication</a>
-                <a class="query-chip" onclick="setQuery('Employee benefits')">Employee benefits</a>
+                <span class="query-chip" onclick="setQuery('How do I submit expenses?')">How do I submit expenses?</span>
+                <span class="query-chip" onclick="setQuery('What are the remote work policies?')">Remote work policies</span>
+                <span class="query-chip" onclick="setQuery('API authentication')">API authentication</span>
+                <span class="query-chip" onclick="setQuery('Employee benefits')">Employee benefits</span>
             </div>
         </div>
 
