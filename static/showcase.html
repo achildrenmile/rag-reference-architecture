@@ -412,6 +412,150 @@
             background: var(--bg-card);
         }
 
+        /* Pipeline */
+        .pipeline-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .pipeline-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pipeline-title-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .pipeline-flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .pipeline-step {
+            background: var(--primary);
+            color: var(--text);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .pipeline-step-detail {
+            font-size: 0.7rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .pipeline-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .pipeline-detail-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .pipeline-detail-card h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-light);
+        }
+
+        .pipeline-detail-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .pipeline-detail-card code {
+            background: rgba(79, 70, 229, 0.2);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--accent-light);
+        }
+
+        .pipeline-code {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            overflow-x: auto;
+        }
+
+        .pipeline-code pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+        }
+
+        .pipeline-code .comment {
+            color: #6b7280;
+        }
+
+        .pipeline-code .keyword {
+            color: var(--accent-light);
+        }
+
+        .pipeline-code .string {
+            color: var(--success);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-flow {
+                flex-direction: column;
+            }
+
+            .pipeline-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
         /* CTA */
         .cta {
             background: linear-gradient(135deg, var(--primary), var(--accent));
@@ -549,9 +693,9 @@
             </a>
             <nav>
                 <a href="#architecture">Architecture</a>
+                <a href="#pipeline">Pipeline</a>
                 <a href="#features">Features</a>
                 <a href="#try-it">Try It</a>
-                <a href="#documents">Documents</a>
                 <a href="https://strali.solutions/#kontakt" class="btn-primary">Contact Us</a>
             </nav>
         </div>
@@ -614,6 +758,234 @@
             <span class="tech-badge">nomic-embed-text</span>
             <span class="tech-badge">Llama 3</span>
             <span class="tech-badge">Mistral 7B</span>
+        </div>
+    </section>
+
+    <!-- RAG Pipeline -->
+    <section id="pipeline">
+        <h2>RAG Pipeline Deep Dive</h2>
+        <p class="section-subtitle">
+            How documents flow from ingestion to intelligent retrieval
+        </p>
+
+        <!-- Ingestion Pipeline -->
+        <div class="pipeline-section">
+            <div class="pipeline-title">
+                <div class="pipeline-title-icon">📥</div>
+                Document Ingestion Pipeline
+            </div>
+
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    Document
+                    <div class="pipeline-step-detail">PDF, TXT, MD</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Validate
+                    <div class="pipeline-step-detail">Sanitize input</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Chunk
+                    <div class="pipeline-step-detail">500 chars, 50 overlap</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Embed
+                    <div class="pipeline-step-detail">768-dim vectors</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Index
+                    <div class="pipeline-step-detail">Elasticsearch</div>
+                </div>
+            </div>
+
+            <div class="pipeline-details">
+                <div class="pipeline-detail-card">
+                    <h4>1. Document Upload</h4>
+                    <p>Documents are submitted via webhook with <code>title</code>, <code>source</code>, and <code>content</code> fields. The API validates and sanitizes all input to prevent injection attacks.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>2. Text Chunking</h4>
+                    <p>Large documents are split into 500-character chunks with 50-character overlap. This ensures context preservation at chunk boundaries while keeping embeddings focused.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>3. Embedding Generation</h4>
+                    <p>Each chunk is converted to a 768-dimensional vector using <code>nomic-embed-text</code> via Ollama. This captures semantic meaning, not just keywords.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>4. Vector Indexing</h4>
+                    <p>Embeddings are stored in Elasticsearch with <code>dense_vector</code> type and cosine similarity indexing for fast approximate nearest neighbor search.</p>
+                </div>
+            </div>
+
+            <div class="pipeline-code">
+<pre><span class="comment"># Ingestion API Request</span>
+curl -X POST https://n8n.strali.solutions/webhook/ingest \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "title": "IT Security Policy",
+    "source": "IT Department",
+    "content": "Password requirements: Minimum 12 characters..."
+  }'</span>
+
+<span class="comment"># Response</span>
+{
+  <span class="string">"status"</span>: <span class="string">"success"</span>,
+  <span class="string">"chunks_processed"</span>: 3,
+  <span class="string">"title"</span>: <span class="string">"IT Security Policy"</span>
+}</pre>
+            </div>
+        </div>
+
+        <!-- Search Pipeline -->
+        <div class="pipeline-section">
+            <div class="pipeline-title">
+                <div class="pipeline-title-icon">🔍</div>
+                Semantic Search Pipeline
+            </div>
+
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    Query
+                    <div class="pipeline-step-detail">Natural language</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Embed Query
+                    <div class="pipeline-step-detail">Same model</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Vector Search
+                    <div class="pipeline-step-detail">Cosine similarity</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Rank Results
+                    <div class="pipeline-step-detail">Top-K retrieval</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Return
+                    <div class="pipeline-step-detail">With scores</div>
+                </div>
+            </div>
+
+            <div class="pipeline-details">
+                <div class="pipeline-detail-card">
+                    <h4>1. Query Embedding</h4>
+                    <p>User's natural language question is converted to the same 768-dim vector space using <code>nomic-embed-text</code>. This allows semantic matching.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>2. Cosine Similarity</h4>
+                    <p>Elasticsearch computes cosine similarity between query vector and all indexed document vectors. Values range from -1 to 1, with 1 being identical.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>3. Top-K Retrieval</h4>
+                    <p>The most similar chunks are retrieved (default: 5). Results include the original text, source metadata, and similarity score as percentage.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>4. RAG Augmentation</h4>
+                    <p>Retrieved chunks can be injected into LLM prompts as context, enabling the model to answer questions using your specific knowledge base.</p>
+                </div>
+            </div>
+
+            <div class="pipeline-code">
+<pre><span class="comment"># Search API Request</span>
+curl -X POST https://n8n.strali.solutions/webhook/search \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{"query": "What are the password requirements?", "limit": 3}'</span>
+
+<span class="comment"># Response</span>
+{
+  <span class="string">"query"</span>: <span class="string">"What are the password requirements?"</span>,
+  <span class="string">"total"</span>: 3,
+  <span class="string">"results"</span>: [
+    {
+      <span class="string">"title"</span>: <span class="string">"IT Security Policy"</span>,
+      <span class="string">"score"</span>: <span class="string">"0.6888"</span>,  <span class="comment">// 68.88% match</span>
+      <span class="string">"content"</span>: <span class="string">"Password Requirements: Minimum 12 characters..."</span>,
+      <span class="string">"source"</span>: <span class="string">"IT Security Team"</span>
+    }
+  ]
+}</pre>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="pipeline-section">
+            <div class="pipeline-title">
+                <div class="pipeline-title-icon">⚙️</div>
+                Technical Implementation
+            </div>
+
+            <div class="two-col">
+                <div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Elasticsearch Index Mapping</h3>
+                    <div class="pipeline-code">
+<pre>{
+  <span class="string">"mappings"</span>: {
+    <span class="string">"properties"</span>: {
+      <span class="string">"chunk_id"</span>: { <span class="string">"type"</span>: <span class="string">"keyword"</span> },
+      <span class="string">"content"</span>: { <span class="string">"type"</span>: <span class="string">"text"</span> },
+      <span class="string">"title"</span>: { <span class="string">"type"</span>: <span class="string">"text"</span> },
+      <span class="string">"source"</span>: { <span class="string">"type"</span>: <span class="string">"keyword"</span> },
+      <span class="string">"embedding"</span>: {
+        <span class="string">"type"</span>: <span class="string">"dense_vector"</span>,
+        <span class="string">"dims"</span>: 768,
+        <span class="string">"index"</span>: true,
+        <span class="string">"similarity"</span>: <span class="string">"cosine"</span>
+      }
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Vector Search Query</h3>
+                    <div class="pipeline-code">
+<pre>{
+  <span class="string">"size"</span>: 5,
+  <span class="string">"query"</span>: {
+    <span class="string">"script_score"</span>: {
+      <span class="string">"query"</span>: { <span class="string">"match_all"</span>: {} },
+      <span class="string">"script"</span>: {
+        <span class="string">"source"</span>: <span class="string">"cosineSimilarity(
+          params.query_vector,
+          'embedding'
+        ) + 1.0"</span>,
+        <span class="string">"params"</span>: {
+          <span class="string">"query_vector"</span>: [0.1, -0.2, ...]
+        }
+      }
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pipeline-details" style="margin-top: 2rem;">
+                <div class="pipeline-detail-card">
+                    <h4>Embedding Model</h4>
+                    <p><code>nomic-embed-text</code> - 768 dimensions, optimized for retrieval tasks. Runs locally via Ollama with no external API calls.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>Chunking Strategy</h4>
+                    <p>Fixed-size with overlap prevents context loss at boundaries. 500 chars balances specificity with context. Overlap of 50 chars ensures continuity.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>Similarity Metric</h4>
+                    <p>Cosine similarity measures angle between vectors, ignoring magnitude. Perfect for comparing semantic meaning regardless of text length.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>n8n Orchestration</h4>
+                    <p>Visual workflow builder handles the pipeline. No code required to modify chunking, add preprocessing, or connect new data sources.</p>
+                </div>
+            </div>
         </div>
     </section>
 
