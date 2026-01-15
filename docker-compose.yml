@@ -61,6 +61,7 @@ services:
       - openwebui-data:/app/backend/data
       - ./static/loader.js:/app/backend/open_webui/static/loader.js:ro
       - ./static/search.html:/app/backend/open_webui/static/search.html:ro
+      - ./static/showcase.html:/app/backend/open_webui/static/showcase.html:ro
     restart: unless-stopped
 
   n8n:
