@@ -232,6 +232,44 @@
             color: #6b7280;
         }
 
+        /* Example Queries */
+        .example-queries {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .example-queries p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .query-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .query-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .query-chip:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--text);
+            transform: translateY(-2px);
+        }
+
         /* Messages */
         .loading {
             text-align: center;
@@ -373,6 +411,17 @@
             <button id="searchBtn" onclick="search()">Search</button>
         </div>
 
+        <!-- Example Queries -->
+        <div class="example-queries">
+            <p>Try these queries:</p>
+            <div class="query-chips">
+                <a class="query-chip" onclick="setQuery('How do I submit expenses?')">How do I submit expenses?</a>
+                <a class="query-chip" onclick="setQuery('What are the remote work policies?')">Remote work policies</a>
+                <a class="query-chip" onclick="setQuery('API authentication')">API authentication</a>
+                <a class="query-chip" onclick="setQuery('Employee benefits')">Employee benefits</a>
+            </div>
+        </div>
+
         <div id="results"></div>
     </div>
 
@@ -382,6 +431,11 @@
         document.getElementById('query').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') search();
         });
+
+        function setQuery(text) {
+            document.getElementById('query').value = text;
+            search();
+        }
 
         async function search() {
             const query = document.getElementById('query').value.trim();
