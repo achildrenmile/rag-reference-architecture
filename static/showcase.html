@@ -44,6 +44,11 @@
             padding: 0;
         }
 
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
         html {
             scroll-behavior: smooth;
         }
@@ -358,12 +363,14 @@
         }
 
         .query-card {
+            display: block;
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem;
             cursor: pointer;
             transition: all 0.3s;
+            text-decoration: none;
         }
 
         .query-card:hover {
