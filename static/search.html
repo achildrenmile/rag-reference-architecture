@@ -436,6 +436,16 @@
             if (e.key === 'Enter') search();
         });
 
+        // Check for query parameter on page load
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('q');
+            if (q) {
+                document.getElementById('query').value = q;
+                setTimeout(search, 100);
+            }
+        })();
+
         function setQuery(text) {
             document.getElementById('query').value = text;
             search();
