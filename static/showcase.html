@@ -692,7 +692,7 @@
                 </svg>
             </a>
             <nav>
-                <a href="#architecture">Architecture</a>
+                <a href="#architecture">How It Works</a>
                 <a href="#pipeline">Pipeline</a>
                 <a href="#features">Features</a>
                 <a href="#try-it">Try It</a>
@@ -725,39 +725,40 @@
 
     <!-- Architecture -->
     <section id="architecture">
-        <h2>System Architecture</h2>
+        <h2>How It Works</h2>
         <p class="section-subtitle">
-            Self-hosted, secure, and fully transparent AI infrastructure
+            A complete RAG system with chat, search, and knowledge management
         </p>
 
         <div class="architecture">
             <div class="arch-diagram">
-                <div class="arch-box">Internet (HTTPS)</div>
-                <div class="arch-arrow">↓</div>
-                <div class="arch-box">Cloudflare Tunnel</div>
-                <div class="arch-arrow">↓</div>
                 <div class="arch-row">
-                    <div class="arch-box">OpenWebUI (Chat)</div>
-                    <div class="arch-box">n8n (Automation)</div>
+                    <div class="arch-box">Your Documents</div>
                 </div>
                 <div class="arch-arrow">↓</div>
                 <div class="arch-row">
-                    <div class="arch-box">Ollama (LLM)</div>
-                    <div class="arch-box">Elasticsearch (Vectors)</div>
+                    <div class="arch-box">Ingestion Pipeline</div>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-row">
+                    <div class="arch-box">Vector Database</div>
+                    <div class="arch-box">LLM Engine</div>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-row">
+                    <div class="arch-box">AI Chat</div>
+                    <div class="arch-box">Semantic Search</div>
                 </div>
             </div>
         </div>
 
         <div class="tech-stack">
-            <span class="tech-badge">Ollama</span>
-            <span class="tech-badge">Elasticsearch 9</span>
-            <span class="tech-badge">OpenWebUI</span>
-            <span class="tech-badge">n8n</span>
-            <span class="tech-badge">Cloudflare Tunnel</span>
-            <span class="tech-badge">Docker</span>
-            <span class="tech-badge">nomic-embed-text</span>
-            <span class="tech-badge">Llama 3</span>
-            <span class="tech-badge">Mistral 7B</span>
+            <span class="tech-badge">Self-Hosted</span>
+            <span class="tech-badge">Local LLMs</span>
+            <span class="tech-badge">Vector Search</span>
+            <span class="tech-badge">Workflow Automation</span>
+            <span class="tech-badge">No External APIs</span>
+            <span class="tech-badge">EU AI Act Compliant</span>
         </div>
     </section>
 
