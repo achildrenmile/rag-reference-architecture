@@ -69,9 +69,20 @@ Ollama          Elasticsearch
 ├── demo/
 │   ├── RAG_Architecture_Guide.md  # Knowledge base demo document
 │   └── prompt_templates.md        # Demo prompt templates
+├── sample-docs/               # Sample company documents for RAG demo
+│   ├── 01-employee-onboarding.txt
+│   ├── 02-it-security-policy.txt
+│   ├── 03-expense-policy.txt
+│   ├── 04-api-documentation.txt
+│   ├── 05-remote-work-guidelines.txt
+│   ├── 06-engineering-practices.txt
+│   ├── 07-support-procedures.txt
+│   └── 08-benefits-overview.txt
+├── scripts/
+│   ├── disk-monitor.sh        # Uptime Kuma push monitor for disk space
+│   └── ingest-samples.sh      # Ingest sample documents into RAG
 ├── CREDENTIALS.md         # Sensitive credentials (not in repo)
 ├── SECURITY-ASSESSMENT.md # Security assessment details (not in repo)
-├── ingest/                # Document ingestion scripts (future)
 └── models/                # Model configurations (future)
 ```
 
@@ -545,6 +556,51 @@ See `demo/prompt_templates.md` for ready-to-use prompts organized by category:
 - **Filesystem**: File listing, data analysis, file creation
 - **GitHub**: Repository info, code search, issue viewing
 - **RAG**: Document Q&A, multi-document analysis
+
+### Sample Company Documents
+
+The `sample-docs/` directory contains fictional company documents for demonstrating RAG capabilities:
+
+| Document | Description |
+|----------|-------------|
+| Employee Onboarding Guide | Day 1-14 onboarding process, equipment, benefits |
+| IT Security Policy | Password requirements, 2FA, data classification |
+| Expense Reimbursement Policy | Travel, meals, equipment, submission process |
+| Product API Documentation | REST API endpoints, authentication, rate limits |
+| Remote Work Guidelines | Core hours, communication, home office setup |
+| Engineering Best Practices | Code review, testing, git workflow, deployment |
+| Customer Support Procedures | Response times, escalation, ticket workflow |
+| Company Benefits Overview | Health, retirement, PTO, wellness, perks |
+
+**Ingest sample documents:**
+
+```bash
+# Run the ingestion script
+./scripts/ingest-samples.sh
+
+# Or specify a custom endpoint
+./scripts/ingest-samples.sh https://n8n.strali.solutions
+```
+
+**Manual ingestion via API:**
+
+```bash
+curl -X POST https://n8n.strali.solutions/webhook/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Document Title",
+    "source": "Department Name",
+    "content": "Full document content here..."
+  }'
+```
+
+**Sample queries to test:**
+
+- "What are the password requirements?"
+- "How much is the home office budget?"
+- "What is the API rate limit?"
+- "How do I submit expenses?"
+- "What benefits do we offer?"
 
 ### Semantic Search UI
 

@@ -1,0 +1,35 @@
+Title: IT Security Policy
+Source: IT Security Team
+
+TechCorp IT Security Policy v2.3
+
+Password Requirements:
+- Minimum 12 characters
+- Mix of uppercase, lowercase, numbers, and symbols
+- Change every 90 days
+- Never share passwords or write them down
+- Use the company password manager (1Password)
+
+Two-Factor Authentication:
+- Required for all systems including email, VPN, GitHub, and AWS
+- Use hardware keys (YubiKey) or authenticator apps
+- SMS-based 2FA is not permitted
+
+Remote Work Security:
+- Always use the company VPN when accessing internal resources
+- Never use public WiFi without VPN
+- Lock your screen when stepping away
+- Report lost or stolen devices immediately to security@techcorp.example
+
+Data Classification:
+- Public: Marketing materials
+- Internal: Project documentation
+- Confidential: Customer data, financials
+- Restricted: Encryption keys, credentials
+
+Never store Confidential or Restricted data on personal devices.
+
+Incident Reporting:
+Report suspicious emails, unauthorized access attempts, or security concerns to security@techcorp.example within 24 hours.
+
+Annual security training is mandatory for all employees.

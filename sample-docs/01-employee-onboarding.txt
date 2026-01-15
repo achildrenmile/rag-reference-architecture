@@ -1,0 +1,16 @@
+Title: Employee Onboarding Guide
+Source: HR Department
+
+Welcome to TechCorp! This guide will help you get started in your first weeks.
+
+Day 1: Meet with HR to complete paperwork, receive your laptop and access credentials, and attend the welcome orientation. Your manager will introduce you to the team.
+
+Day 2-5: Complete mandatory security training, set up your development environment, and review team documentation.
+
+Week 2: Shadow a team member, attend sprint planning, and start your first small task.
+
+Equipment: You will receive a MacBook Pro or ThinkPad (your choice), two monitors, and a standing desk. Software access includes Slack, Jira, GitHub, and our internal wiki.
+
+Benefits start on day one and include health insurance, dental, vision, 401k matching up to 4%, unlimited PTO, and a monthly wellness stipend of $100.
+
+Questions? Contact hr@techcorp.example or your assigned buddy.

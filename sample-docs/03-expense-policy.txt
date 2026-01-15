@@ -1,0 +1,29 @@
+Title: Expense Reimbursement Policy
+Source: Finance Department
+
+TechCorp Expense Policy
+
+Travel:
+- Economy class flights for trips under 6 hours
+- Business class allowed for international flights over 6 hours
+- Hotel limit: $200/night in major cities, $150 elsewhere
+- Per diem for meals: $75/day
+- Book through Concur or get pre-approval for exceptions
+
+Meals and Entertainment:
+- Team lunches up to $25 per person
+- Client dinners require manager approval for amounts over $100/person
+- Always include attendee names and business purpose
+
+Equipment:
+- Home office equipment up to $500 one-time
+- Ergonomic accessories require HR approval
+- Software subscriptions must go through IT for security review
+
+Submission Process:
+1. Submit expenses within 30 days via Concur
+2. Include itemized receipts for all purchases over $25
+3. Manager approval required within 5 business days
+4. Reimbursement processed bi-weekly on pay dates
+
+Questions? Contact finance@techcorp.example or check the #finance channel on Slack.

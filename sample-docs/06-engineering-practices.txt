@@ -1,0 +1,41 @@
+Title: Engineering Best Practices
+Source: Engineering Team
+
+TechCorp Engineering Standards
+
+Code Review:
+- All changes require at least one approval
+- Use pull requests for all changes
+- Keep PRs small (under 400 lines preferred)
+- Respond to review requests within 24 hours
+
+Testing:
+- Unit test coverage minimum 80%
+- Integration tests for API endpoints
+- E2E tests for critical user flows
+- Run tests locally before pushing
+- CI must pass before merge
+
+Documentation:
+- README in every repository
+- API endpoints documented in OpenAPI format
+- Architecture decisions recorded in ADRs
+- Update docs when changing functionality
+
+Git Workflow:
+- Main branch is always deployable
+- Feature branches from main
+- Squash commits when merging
+- Conventional commits format: feat, fix, docs, refactor, test
+
+Deployment:
+- Automated via GitHub Actions
+- Staging deploys on PR merge
+- Production requires manual approval
+- Rollback within 15 minutes if issues detected
+
+Monitoring:
+- All services emit metrics to Datadog
+- Alerts for error rates above 1%
+- On-call rotation weekly
+- Incident postmortems within 48 hours
