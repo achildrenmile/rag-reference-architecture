@@ -26,6 +26,16 @@ Ollama          Elasticsearch
 - Fully self-hosted
 - EU AI Act compliant (Article 50 transparency)
 
+## About This Reference Architecture
+
+This repository provides a fully functional RAG (Retrieval-Augmented Generation) reference architecture designed for learning, evaluation, and proof-of-concept demonstrations. It showcases how local LLMs, vector search, and workflow automation can work together to build intelligent document retrieval systems — entirely self-hosted and without external API dependencies. While the demo is production-quality code, it is intentionally scoped as a starting point rather than a turnkey enterprise solution.
+
+Production deployments require careful consideration of data governance, access controls, infrastructure scaling, monitoring, and organizational change management. For regulated industries or EU AI Act compliance, additional measures — including risk classification, transparency documentation, human oversight mechanisms, and audit trails — must be architected to meet specific legal and operational requirements. This demo illustrates the technical foundations; achieving full compliance requires professional assessment tailored to your context.
+
+**Live Demo**: [ai4u.strali.solutions](https://ai4u.strali.solutions) | **Showcase**: [ai4u.strali.solutions/showcase](https://ai4u.strali.solutions/showcase)
+
+If you're exploring RAG for your organization, we offer consulting, architecture review, and implementation services to help you move from proof-of-concept to production with confidence. [Contact Strali Solutions](https://strali.solutions/#kontakt) to discuss your requirements.
+
 ## Target Environment
 
 ### Hardware Requirements
@@ -217,7 +227,7 @@ curl -I http://localhost:3000
 
 1. In tunnel settings, go to **Public Hostname** tab
 2. Add hostname:
-   - **Subdomain**: `gpt4strali` (or your choice)
+   - **Subdomain**: `ai4u` (or your choice)
    - **Domain**: `your-domain.com`
    - **Service Type**: HTTP
    - **URL**: `openwebui:8080`
@@ -245,7 +255,7 @@ Look for: `INF Registered tunnel connection`
 
 ### Step 11: Verify Public Access
 
-Access your instance at: `https://gpt4strali.your-domain.com`
+Access your instance at: `https://ai4u.your-domain.com`
 
 ## Service Details
 
@@ -606,7 +616,7 @@ curl -X POST https://n8n.strali.solutions/webhook/ingest \
 
 A standalone search interface for querying the vector database directly:
 
-**Access**: https://gpt4strali.strali.solutions/static/search.html
+**Access**: https://ai4u.strali.solutions/search
 
 Features:
 - Direct vector similarity search against Elasticsearch
@@ -652,8 +662,8 @@ This setup includes transparency features required by the EU AI Act. All AI-powe
 
 | Tool | URL | Implementation | File |
 |------|-----|----------------|------|
-| **OpenWebUI** | gpt4strali.strali.solutions | JavaScript injection + banners | `static/loader.js` |
-| **Semantic Search** | gpt4strali.strali.solutions/static/search.html | HTML footer | `static/search.html` |
+| **OpenWebUI** | ai4u.strali.solutions | JavaScript injection + banners | `static/loader.js` |
+| **Semantic Search** | ai4u.strali.solutions/search | HTML footer | `static/search.html` |
 | **n8n** | n8n.strali.solutions | nginx proxy injection | `n8n-custom/nginx.conf` |
 
 ### How Each Implementation Works
@@ -945,8 +955,8 @@ The platform is monitored via Uptime Kuma (external) with both HTTP endpoint che
 
 | Service | URL | Type | Description |
 |---------|-----|------|-------------|
-| OpenWebUI | `https://gpt4strali.strali.solutions` | HTTP | Main AI chat interface |
-| Semantic Search | `https://gpt4strali.strali.solutions/static/search.html` | HTTP | Vector search UI |
+| OpenWebUI | `https://ai4u.strali.solutions` | HTTP | Main AI chat interface |
+| Semantic Search | `https://ai4u.strali.solutions/search` | HTTP | Vector search UI |
 | n8n | `https://n8n.strali.solutions` | HTTP | Workflow automation |
 | Elasticsearch | `http://192.168.1.32:9200` | HTTP | Vector database (LAN) |
 | Ollama | `http://192.168.1.32:11434/api/tags` | HTTP | LLM runtime (LAN) |
