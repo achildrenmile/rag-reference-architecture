@@ -44,7 +44,7 @@ services:
     container_name: openwebui
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
-      WEBUI_NAME: GPT4Strali
+      WEBUI_NAME: AI4U
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
       # Elasticsearch RAG Configuration
       VECTOR_DB: elasticsearch
