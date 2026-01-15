@@ -8,7 +8,7 @@
         "path": "search",
         "responseMode": "responseNode",
         "options": {
-          "allowedOrigins": "https://gpt4strali.strali.solutions"
+          "allowedOrigins": "https://ai4u.strali.solutions"
         }
       },
       "name": "Search Request",

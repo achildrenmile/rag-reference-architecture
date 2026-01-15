@@ -7,7 +7,7 @@
         "path": "ingest",
         "responseMode": "responseNode",
         "options": {
-          "allowedOrigins": "https://gpt4strali.strali.solutions,https://n8n.strali.solutions"
+          "allowedOrigins": "https://ai4u.strali.solutions,https://n8n.strali.solutions"
         }
       },
       "name": "Document Upload",
