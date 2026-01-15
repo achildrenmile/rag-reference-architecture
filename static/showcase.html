@@ -441,6 +441,19 @@
             font-size: 1rem;
         }
 
+        .pipeline-title-svg {
+            width: 24px;
+            height: 24px;
+            color: var(--accent-light);
+            flex-shrink: 0;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
         .pipeline-flow {
             display: flex;
             flex-wrap: wrap;
@@ -772,7 +785,7 @@
         <!-- Ingestion Pipeline -->
         <div class="pipeline-section">
             <div class="pipeline-title">
-                <div class="pipeline-title-icon">📥</div>
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Document Ingestion Pipeline
             </div>
 
@@ -821,30 +834,12 @@
                     <p>Embeddings are stored in Elasticsearch with <code>dense_vector</code> type and cosine similarity indexing for fast approximate nearest neighbor search.</p>
                 </div>
             </div>
-
-            <div class="pipeline-code">
-<pre><span class="comment"># Ingestion API Request</span>
-curl -X POST https://n8n.strali.solutions/webhook/ingest \
-  -H <span class="string">"Content-Type: application/json"</span> \
-  -d <span class="string">'{
-    "title": "IT Security Policy",
-    "source": "IT Department",
-    "content": "Password requirements: Minimum 12 characters..."
-  }'</span>
-
-<span class="comment"># Response</span>
-{
-  <span class="string">"status"</span>: <span class="string">"success"</span>,
-  <span class="string">"chunks_processed"</span>: 3,
-  <span class="string">"title"</span>: <span class="string">"IT Security Policy"</span>
-}</pre>
-            </div>
         </div>
 
         <!-- Search Pipeline -->
         <div class="pipeline-section">
             <div class="pipeline-title">
-                <div class="pipeline-title-icon">🔍</div>
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 Semantic Search Pipeline
             </div>
 
@@ -893,98 +888,31 @@ curl -X POST https://n8n.strali.solutions/webhook/ingest \
                     <p>Retrieved chunks can be injected into LLM prompts as context, enabling the model to answer questions using your specific knowledge base.</p>
                 </div>
             </div>
-
-            <div class="pipeline-code">
-<pre><span class="comment"># Search API Request</span>
-curl -X POST https://n8n.strali.solutions/webhook/search \
-  -H <span class="string">"Content-Type: application/json"</span> \
-  -d <span class="string">'{"query": "What are the password requirements?", "limit": 3}'</span>
-
-<span class="comment"># Response</span>
-{
-  <span class="string">"query"</span>: <span class="string">"What are the password requirements?"</span>,
-  <span class="string">"total"</span>: 3,
-  <span class="string">"results"</span>: [
-    {
-      <span class="string">"title"</span>: <span class="string">"IT Security Policy"</span>,
-      <span class="string">"score"</span>: <span class="string">"0.6888"</span>,  <span class="comment">// 68.88% match</span>
-      <span class="string">"content"</span>: <span class="string">"Password Requirements: Minimum 12 characters..."</span>,
-      <span class="string">"source"</span>: <span class="string">"IT Security Team"</span>
-    }
-  ]
-}</pre>
-            </div>
         </div>
 
-        <!-- Technical Details -->
+        <!-- Technical Highlights -->
         <div class="pipeline-section">
             <div class="pipeline-title">
-                <div class="pipeline-title-icon">⚙️</div>
-                Technical Implementation
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Key Technical Aspects
             </div>
 
-            <div class="two-col">
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Elasticsearch Index Mapping</h3>
-                    <div class="pipeline-code">
-<pre>{
-  <span class="string">"mappings"</span>: {
-    <span class="string">"properties"</span>: {
-      <span class="string">"chunk_id"</span>: { <span class="string">"type"</span>: <span class="string">"keyword"</span> },
-      <span class="string">"content"</span>: { <span class="string">"type"</span>: <span class="string">"text"</span> },
-      <span class="string">"title"</span>: { <span class="string">"type"</span>: <span class="string">"text"</span> },
-      <span class="string">"source"</span>: { <span class="string">"type"</span>: <span class="string">"keyword"</span> },
-      <span class="string">"embedding"</span>: {
-        <span class="string">"type"</span>: <span class="string">"dense_vector"</span>,
-        <span class="string">"dims"</span>: 768,
-        <span class="string">"index"</span>: true,
-        <span class="string">"similarity"</span>: <span class="string">"cosine"</span>
-      }
-    }
-  }
-}</pre>
-                    </div>
-                </div>
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Vector Search Query</h3>
-                    <div class="pipeline-code">
-<pre>{
-  <span class="string">"size"</span>: 5,
-  <span class="string">"query"</span>: {
-    <span class="string">"script_score"</span>: {
-      <span class="string">"query"</span>: { <span class="string">"match_all"</span>: {} },
-      <span class="string">"script"</span>: {
-        <span class="string">"source"</span>: <span class="string">"cosineSimilarity(
-          params.query_vector,
-          'embedding'
-        ) + 1.0"</span>,
-        <span class="string">"params"</span>: {
-          <span class="string">"query_vector"</span>: [0.1, -0.2, ...]
-        }
-      }
-    }
-  }
-}</pre>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pipeline-details" style="margin-top: 2rem;">
+            <div class="pipeline-details">
                 <div class="pipeline-detail-card">
-                    <h4>Embedding Model</h4>
-                    <p><code>nomic-embed-text</code> - 768 dimensions, optimized for retrieval tasks. Runs locally via Ollama with no external API calls.</p>
+                    <h4>Local Embedding Model</h4>
+                    <p>768-dimensional vectors optimized for retrieval. Runs entirely on-premise with no external API calls required.</p>
                 </div>
                 <div class="pipeline-detail-card">
-                    <h4>Chunking Strategy</h4>
-                    <p>Fixed-size with overlap prevents context loss at boundaries. 500 chars balances specificity with context. Overlap of 50 chars ensures continuity.</p>
+                    <h4>Smart Chunking</h4>
+                    <p>Documents split into overlapping segments to preserve context at boundaries while keeping embeddings focused and relevant.</p>
                 </div>
                 <div class="pipeline-detail-card">
-                    <h4>Similarity Metric</h4>
-                    <p>Cosine similarity measures angle between vectors, ignoring magnitude. Perfect for comparing semantic meaning regardless of text length.</p>
+                    <h4>Semantic Matching</h4>
+                    <p>Cosine similarity compares meaning, not keywords. Find relevant content even when exact terms don't match.</p>
                 </div>
                 <div class="pipeline-detail-card">
-                    <h4>n8n Orchestration</h4>
-                    <p>Visual workflow builder handles the pipeline. No code required to modify chunking, add preprocessing, or connect new data sources.</p>
+                    <h4>Visual Workflow Builder</h4>
+                    <p>No-code pipeline configuration. Easily modify processing steps, add data sources, or adjust parameters.</p>
                 </div>
             </div>
         </div>
@@ -1000,7 +928,9 @@ curl -X POST https://n8n.strali.solutions/webhook/search \
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">💬</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
                     <div class="feature-title">AI Chat Interface</div>
                 </div>
                 <p class="feature-desc">
@@ -1014,7 +944,9 @@ curl -X POST https://n8n.strali.solutions/webhook/search \
 
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">🔍</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
                     <div class="feature-title">Semantic Search</div>
                 </div>
                 <p class="feature-desc">
@@ -1028,7 +960,9 @@ curl -X POST https://n8n.strali.solutions/webhook/search \
 
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">⚡</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
                     <div class="feature-title">RAG Pipeline</div>
                 </div>
                 <p class="feature-desc">
@@ -1042,12 +976,14 @@ curl -X POST https://n8n.strali.solutions/webhook/search \
 
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">🔄</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    </div>
                     <div class="feature-title">Workflow Automation</div>
                 </div>
                 <p class="feature-desc">
-                    n8n-powered workflows for document processing, scheduled ingestion,
-                    and API integrations. Visual workflow builder included.
+                    Visual workflows for document processing, scheduled ingestion,
+                    and API integrations. No-code pipeline builder included.
                 </p>
                 <a href="https://n8n.strali.solutions" class="feature-link">
                     Open n8n →
@@ -1056,12 +992,14 @@ curl -X POST https://n8n.strali.solutions/webhook/search \
 
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">🔒</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
                     <div class="feature-title">Self-Hosted & Secure</div>
                 </div>
                 <p class="feature-desc">
                     All data stays on-premise. No external API calls for inference.
-                    Zero-trust network access via Cloudflare Tunnel.
+                    Full control over your AI infrastructure.
                 </p>
                 <a href="https://strali.solutions/#ai-platforms" class="feature-link">
                     Learn More →
@@ -1070,7 +1008,9 @@ curl -X POST https://n8n.strali.solutions/webhook/search \
 
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">⚖️</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
                     <div class="feature-title">EU AI Act Compliant</div>
                 </div>
                 <p class="feature-desc">
