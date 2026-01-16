@@ -43,13 +43,19 @@ data:
             listen 8080;
             server_name _;
 
-            # Friendly URL redirects
+            # Use X-Forwarded-Proto from Cloudflare
+            set $redirect_scheme $scheme;
+            if ($http_x_forwarded_proto) {
+                set $redirect_scheme $http_x_forwarded_proto;
+            }
+
+            # Friendly URL redirects (relative to preserve https)
             location = /showcase {
-                return 301 /static/showcase.html;
+                return 301 $redirect_scheme://$host/static/showcase.html;
             }
 
             location = /search {
-                return 301 /static/search.html;
+                return 301 $redirect_scheme://$host/static/search.html;
             }
 
             # Proxy everything else to OpenWebUI
