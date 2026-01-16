@@ -298,7 +298,7 @@ For production deployments, this repository supports full GitOps using Argo CD w
 │                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────┐│
 │  │    root      │  │   argocd     │  │      headlamp       ││
-│  │ (app-of-apps)│ │(self-managed)│  │   (Kubernetes UI)    ││
+│  │ (app-of-apps)│  │(self-managed)│  │   (Kubernetes UI)   ││
 │  └──────┬───────┘  └──────────────┘  └─────────────────────┘│
 │         │                                                   │
 │         ▼                                                   │
