@@ -1,0 +1,23 @@
+# Headlamp Helm values
+# https://github.com/kubernetes-sigs/headlamp/tree/main/charts/headlamp
+
+clusterRoleBinding:
+  create: true
+
+serviceAccount:
+  create: true
+
+config:
+  inCluster: true
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
