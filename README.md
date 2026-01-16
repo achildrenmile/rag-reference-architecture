@@ -34,7 +34,7 @@ This repository provides a fully functional RAG (Retrieval-Augmented Generation)
 
 Production deployments require careful consideration of data governance, access controls, infrastructure scaling, monitoring, and organizational change management. For regulated industries or EU AI Act compliance, additional measures — including risk classification, transparency documentation, human oversight mechanisms, and audit trails — must be architected to meet specific legal and operational requirements. This demo illustrates the technical foundations; achieving full compliance requires professional assessment tailored to your context.
 
-**Live Demo**: [ai4u.strali.solutions](https://ai4u.strali.solutions) | **Showcase**: [ai4u.strali.solutions/showcase](https://ai4u.strali.solutions/showcase)
+**Live Demo**: [ai4u.strali.solutions](https://ai4u.strali.solutions) | **Showcase**: [ai4u.strali.solutions/static/showcase.html](https://ai4u.strali.solutions/static/showcase.html)
 
 If you're exploring RAG for your organization, we offer consulting, architecture review, and implementation services to help you move from proof-of-concept to production with confidence. [Contact Strali Solutions](https://strali.solutions/#kontakt) to discuss your requirements.
 
