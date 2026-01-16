@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwebui
+  namespace: rag-demo
+  labels:
+    app: openwebui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openwebui
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: openwebui
+    spec:
+      containers:
+        - name: openwebui
+          image: ghcr.io/open-webui/open-webui:main
+          env:
+            - name: OLLAMA_BASE_URL
+              value: http://ollama:11434
+            - name: WEBUI_NAME
+              value: AI4U
+            - name: WEBUI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openwebui-secrets
+                  key: secret-key
+            - name: VECTOR_DB
+              value: elasticsearch
+            - name: ELASTICSEARCH_URL
+              value: http://elasticsearch:9200
+            - name: ENABLE_RAG_HYBRID_SEARCH
+              value: "true"
+            - name: WEBUI_BANNERS
+              value: '[{"id": "demo-warning", "type": "warning", "title": "", "content": "DEMO - DO NOT share sensitive information!", "dismissible": false, "timestamp": 1}, {"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our [Imprint](https://strali.solutions/impressum) and [Privacy Policy](https://strali.solutions/datenschutz).", "dismissible": true, "timestamp": 1}]'
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/search.html
+              subPath: search.html
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/showcase.html
+              subPath: showcase.html
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/loader.js
+              subPath: loader.js
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: openwebui-data
+        - name: static-files
+          configMap:
+            name: openwebui-static-files

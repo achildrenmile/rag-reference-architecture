@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcpo-config
+  namespace: rag-demo
+data:
+  config.json: |
+    {
+      "mcpServers": {
+        "duckduckgo": {
+          "command": "uvx",
+          "args": ["duckduckgo-mcp-server"]
+        },
+        "filesystem": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+        },
+        "github": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-github"],
+          "env": {
+            "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+          }
+        }
+      }
+    }

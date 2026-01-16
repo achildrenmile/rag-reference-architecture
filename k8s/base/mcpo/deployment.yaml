@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcpo
+  namespace: rag-demo
+  labels:
+    app: mcpo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcpo
+  template:
+    metadata:
+      labels:
+        app: mcpo
+    spec:
+      containers:
+        - name: mcpo
+          image: ghcr.io/open-webui/mcpo:main
+          args:
+            - --config
+            - /config/config.json
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mcpo-secrets
+                  key: github-token
+                  optional: true
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: shared-data
+              mountPath: /data
+      volumes:
+        - name: config
+          configMap:
+            name: mcpo-config
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: shared-data
