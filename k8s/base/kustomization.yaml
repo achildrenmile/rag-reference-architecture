@@ -10,4 +10,5 @@ resources:
   - openwebui
   - n8n
   - mcpo
+  - nginx
   - cloudflared
