@@ -1,5 +1,6 @@
 {
   "name": "RAG Document Ingestion Pipeline",
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -10,15 +11,18 @@
           "allowedOrigins": "https://ai4u.strali.solutions,https://n8n.strali.solutions"
         }
       },
+      "id": "ingest-webhook",
       "name": "Document Upload",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [240, 300],
+      "webhookId": "ingest-webhook-id"
     },
     {
       "parameters": {
-        "jsCode": "// Input validation and sanitization\nconst body = $input.first().json.body || {};\n\n// Validate required fields\nif (typeof body.content !== 'string' || body.content.trim().length === 0) {\n  return [{ json: { error: true, message: 'Content is required and must be a non-empty string' } }];\n}\n\n// Sanitize and limit content (max 50KB)\nconst content = body.content.trim().slice(0, 50000);\n\n// Sanitize title (max 200 chars, alphanumeric + spaces)\nconst title = (body.title || 'Untitled Document')\n  .replace(/[^a-zA-Z0-9\\s\\-_]/g, '')\n  .slice(0, 200) || 'Untitled';\n\n// Sanitize source (max 500 chars)\nconst source = (body.source || 'n8n-upload')\n  .replace(/[^a-zA-Z0-9\\s\\-_:\\/\\.]/g, '')\n  .slice(0, 500);\n\nreturn [{\n  json: {\n    content: content,\n    title: title,\n    source: source,\n    timestamp: new Date().toISOString(),\n    error: false\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body || {};\n\nif (typeof body.content !== 'string' || body.content.trim().length === 0) {\n  return [{ json: { error: true, message: 'Content is required and must be a non-empty string' } }];\n}\n\nconst content = body.content.trim().slice(0, 50000);\nconst title = (body.title || 'Untitled Document').replace(/[^a-zA-Z0-9\\s\\-_]/g, '').slice(0, 200) || 'Untitled';\nconst source = (body.source || 'n8n-upload').replace(/[^a-zA-Z0-9\\s\\-_:\\/\\.]/g, '').slice(0, 500);\n\nreturn [{\n  json: {\n    content: content,\n    title: title,\n    source: source,\n    timestamp: new Date().toISOString(),\n    error: false\n  }\n}];"
       },
+      "id": "validate-node",
       "name": "Validate & Sanitize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -27,11 +31,26 @@
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [{ "id": "check-error", "leftValue": "={{ $json.error }}", "rightValue": false, "operator": { "type": "boolean", "operation": "equals" } }],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
           "combinator": "and"
         }
       },
+      "id": "check-node",
       "name": "Check Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -39,8 +58,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Chunk text into smaller pieces for embedding\nconst content = $input.first().json.content;\nconst title = $input.first().json.title;\nconst source = $input.first().json.source;\nconst timestamp = $input.first().json.timestamp;\n\nconst chunkSize = 500;\nconst chunkOverlap = 50;\nconst chunks = [];\nlet start = 0;\nlet chunkIndex = 0;\n\n// Generate safe chunk_id from title\nconst safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50);\n\nwhile (start < content.length) {\n  const end = Math.min(start + chunkSize, content.length);\n  const chunkText = content.slice(start, end);\n  \n  chunks.push({\n    json: {\n      chunk_id: `${safeTitle}_chunk_${chunkIndex}`,\n      chunk_index: chunkIndex,\n      content: chunkText,\n      title: title,\n      source: source,\n      timestamp: timestamp,\n      total_chunks: Math.ceil(content.length / (chunkSize - chunkOverlap))\n    }\n  });\n  \n  start += chunkSize - chunkOverlap;\n  chunkIndex++;\n}\n\nreturn chunks;"
+        "jsCode": "const content = $input.first().json.content;\nconst title = $input.first().json.title;\nconst source = $input.first().json.source;\nconst timestamp = $input.first().json.timestamp;\n\nconst chunkSize = 500;\nconst chunkOverlap = 50;\nconst chunks = [];\nlet start = 0;\nlet chunkIndex = 0;\n\nconst safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50);\n\nwhile (start < content.length) {\n  const end = Math.min(start + chunkSize, content.length);\n  const chunkText = content.slice(start, end);\n  \n  chunks.push({\n    json: {\n      chunk_id: `${safeTitle}_chunk_${chunkIndex}`,\n      chunk_index: chunkIndex,\n      content: chunkText,\n      title: title,\n      source: source,\n      timestamp: timestamp,\n      total_chunks: Math.ceil(content.length / (chunkSize - chunkOverlap))\n    }\n  });\n  \n  start += chunkSize - chunkOverlap;\n  chunkIndex++;\n}\n\nreturn chunks;"
       },
+      "id": "chunk-node",
       "name": "Chunk Text",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -54,6 +74,7 @@
         "specifyBody": "json",
         "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": {{ JSON.stringify($json.content) }}}"
       },
+      "id": "embed-node",
       "name": "Generate Embedding",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -67,6 +88,7 @@
         "specifyBody": "json",
         "jsonBody": "={\n  \"chunk_id\": {{ JSON.stringify($('Chunk Text').item.json.chunk_id) }},\n  \"chunk_index\": {{ $('Chunk Text').item.json.chunk_index }},\n  \"content\": {{ JSON.stringify($('Chunk Text').item.json.content) }},\n  \"title\": {{ JSON.stringify($('Chunk Text').item.json.title) }},\n  \"source\": {{ JSON.stringify($('Chunk Text').item.json.source) }},\n  \"timestamp\": {{ JSON.stringify($('Chunk Text').item.json.timestamp) }},\n  \"embedding\": {{ JSON.stringify($json.embedding) }}\n}"
       },
+      "id": "store-node",
       "name": "Store in Elasticsearch",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -77,6 +99,7 @@
         "respondWith": "json",
         "responseBody": "={\"status\": \"success\", \"message\": \"Document ingested\", \"title\": {{ JSON.stringify($('Validate & Sanitize').item.json.title) }}, \"chunks_processed\": {{ $('Chunk Text').all().length }}}"
       },
+      "id": "success-node",
       "name": "Respond Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -86,8 +109,11 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({error: $json.message}) }}",
-        "options": { "responseCode": 400 }
+        "options": {
+          "responseCode": 400
+        }
       },
+      "id": "error-node",
       "name": "Respond Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -95,12 +121,27 @@
     }
   ],
   "connections": {
-    "Document Upload": { "main": [[{"node": "Validate & Sanitize", "type": "main", "index": 0}]] },
-    "Validate & Sanitize": { "main": [[{"node": "Check Valid", "type": "main", "index": 0}]] },
-    "Check Valid": { "main": [ [{"node": "Chunk Text", "type": "main", "index": 0}], [{"node": "Respond Error", "type": "main", "index": 0}] ] },
-    "Chunk Text": { "main": [[{"node": "Generate Embedding", "type": "main", "index": 0}]] },
-    "Generate Embedding": { "main": [[{"node": "Store in Elasticsearch", "type": "main", "index": 0}]] },
-    "Store in Elasticsearch": { "main": [[{"node": "Respond Success", "type": "main", "index": 0}]] }
+    "Document Upload": {
+      "main": [[{"node": "Validate & Sanitize", "type": "main", "index": 0}]]
+    },
+    "Validate & Sanitize": {
+      "main": [[{"node": "Check Valid", "type": "main", "index": 0}]]
+    },
+    "Check Valid": {
+      "main": [
+        [{"node": "Chunk Text", "type": "main", "index": 0}],
+        [{"node": "Respond Error", "type": "main", "index": 0}]
+      ]
+    },
+    "Chunk Text": {
+      "main": [[{"node": "Generate Embedding", "type": "main", "index": 0}]]
+    },
+    "Generate Embedding": {
+      "main": [[{"node": "Store in Elasticsearch", "type": "main", "index": 0}]]
+    },
+    "Store in Elasticsearch": {
+      "main": [[{"node": "Respond Success", "type": "main", "index": 0}]]
+    }
   },
-  "settings": { "executionOrder": "v1" }
+  "settings": {"executionOrder": "v1"}
 }
