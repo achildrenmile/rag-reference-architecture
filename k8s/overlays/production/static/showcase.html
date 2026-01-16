@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Reference Architecture | Strali Solutions - AI Demo Platform</title>
+    <meta name="description" content="Reference architecture for Retrieval-Augmented Generation (RAG). Self-hosted AI chat, semantic search, and workflow automation demo with full source code.">
+    <meta name="keywords" content="RAG, Retrieval Augmented Generation, AI, LLM, Elasticsearch, Vector Search, Enterprise AI, Self-hosted AI, EU AI Act">
+    <meta name="author" content="Strali Solutions">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="RAG Reference Architecture | Strali Solutions">
+    <meta property="og:description" content="Reference architecture demonstrating RAG patterns with AI chat, semantic search, and workflow automation.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ai4u.strali.solutions/static/showcase.html">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://ai4u.strali.solutions/static/showcase.html">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #1a237e;
+            --primary-light: #3949ab;
+            --accent: #4f46e5;
+            --accent-light: #818cf8;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            cursor: default;
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(26, 35, 126, 0.25), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(79, 70, 229, 0.1), transparent);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 1rem 2rem;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            height: 36px;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--text);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--text);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--text);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-large {
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: var(--text);
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            background: var(--bg-card);
+        }
+
+        /* Sections */
+        section {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Architecture */
+        .architecture {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .arch-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .arch-row {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .arch-box {
+            background: var(--primary);
+            color: var(--text);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .arch-arrow {
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.4s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .feature-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-link {
+            color: var(--accent-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s;
+        }
+
+        .feature-link:hover {
+            color: var(--text);
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .tech-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Sample Queries */
+        .queries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .query-card {
+            display: block;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .query-card:hover {
+            border-color: var(--accent);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .query-text {
+            color: var(--text);
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .query-source {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Documents */
+        .docs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .docs-table th,
+        .docs-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .docs-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .docs-table td {
+            color: var(--text);
+        }
+
+        .docs-table tr:hover td {
+            background: var(--bg-card);
+        }
+
+        /* Pipeline */
+        .pipeline-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .pipeline-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pipeline-title-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .pipeline-title-svg {
+            width: 24px;
+            height: 24px;
+            color: var(--accent-light);
+            flex-shrink: 0;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .pipeline-flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .pipeline-step {
+            background: var(--primary);
+            color: var(--text);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .pipeline-step-detail {
+            font-size: 0.7rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .pipeline-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .pipeline-detail-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .pipeline-detail-card h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-light);
+        }
+
+        .pipeline-detail-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .pipeline-detail-card code {
+            background: rgba(79, 70, 229, 0.2);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--accent-light);
+        }
+
+        .pipeline-code {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            overflow-x: auto;
+        }
+
+        .pipeline-code pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+        }
+
+        .pipeline-code .comment {
+            color: #6b7280;
+        }
+
+        .pipeline-code .keyword {
+            color: var(--accent-light);
+        }
+
+        .pipeline-code .string {
+            color: var(--success);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-flow {
+                flex-direction: column;
+            }
+
+            .pipeline-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* CTA */
+        .cta {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .cta h2 {
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(10, 10, 15, 0.95);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        .footer-legal {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .footer-legal a {
+            color: var(--accent-light);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+
+            nav {
+                display: none;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .hero {
+                padding: 6rem 1rem 3rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn-large {
+                width: 100%;
+                text-align: center;
+            }
+
+            section {
+                padding: 3rem 1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .arch-row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .arch-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Status indicator */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <a href="https://strali.solutions">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" class="logo">
+                    <rect x="0" y="0" width="40" height="40" rx="6" fill="#1a237e"/>
+                    <text x="11" y="31" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="bold" fill="white">S</text>
+                    <text x="45" y="26" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc">trali</text>
+                    <text x="45" y="39" font-family="Inter, Arial, sans-serif" font-size="12" letter-spacing="0.5" fill="#94a3b8">solutions</text>
+                </svg>
+            </a>
+            <nav>
+                <a href="#architecture">How It Works</a>
+                <a href="#pipeline">Pipeline</a>
+                <a href="#features">Features</a>
+                <a href="#try-it">Try It</a>
+                <a href="https://strali.solutions/#kontakt" class="btn-primary">Contact Us</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <span class="hero-badge">Live Demo Platform</span>
+        <h1>RAG Reference Architecture</h1>
+        <p class="hero-subtitle">
+            A complete, reproducible Retrieval-Augmented Generation demo featuring self-hosted AI,
+            semantic vector search, and workflow automation. Open source with full documentation.
+        </p>
+        <div class="hero-buttons">
+            <a href="https://ai4u.strali.solutions" class="btn-large btn-accent">
+                Launch AI Chat
+            </a>
+            <a href="https://ai4u.strali.solutions/search" class="btn-large btn-outline">
+                Try Semantic Search
+            </a>
+        </div>
+        <div class="status" style="margin-top: 2rem;">
+            <span class="status-dot"></span>
+            <span style="color: var(--success);">All systems operational</span>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture">
+        <h2>How It Works</h2>
+        <p class="section-subtitle">
+            A complete RAG system with chat, search, and knowledge management
+        </p>
+
+        <div class="architecture">
+            <div class="arch-diagram">
+                <div class="arch-row">
+                    <div class="arch-box">Your Documents</div>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-row">
+                    <div class="arch-box">Ingestion Pipeline</div>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-row">
+                    <div class="arch-box">Vector Database</div>
+                    <div class="arch-box">LLM Engine</div>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-row">
+                    <div class="arch-box">AI Chat</div>
+                    <div class="arch-box">Semantic Search</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tech-stack">
+            <span class="tech-badge">Self-Hosted</span>
+            <span class="tech-badge">Local LLMs</span>
+            <span class="tech-badge">Vector Search</span>
+            <span class="tech-badge">Workflow Automation</span>
+            <span class="tech-badge">No External APIs</span>
+            <span class="tech-badge">EU AI Act Compliant</span>
+        </div>
+    </section>
+
+    <!-- RAG Pipeline -->
+    <section id="pipeline">
+        <h2>RAG Pipeline Deep Dive</h2>
+        <p class="section-subtitle">
+            How documents flow from ingestion to intelligent retrieval
+        </p>
+
+        <!-- Ingestion Pipeline -->
+        <div class="pipeline-section">
+            <div class="pipeline-title">
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Document Ingestion Pipeline
+            </div>
+
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    Document
+                    <div class="pipeline-step-detail">PDF, TXT, MD</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Validate
+                    <div class="pipeline-step-detail">Sanitize input</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Chunk
+                    <div class="pipeline-step-detail">500 chars, 50 overlap</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Embed
+                    <div class="pipeline-step-detail">768-dim vectors</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Index
+                    <div class="pipeline-step-detail">Elasticsearch</div>
+                </div>
+            </div>
+
+            <div class="pipeline-details">
+                <div class="pipeline-detail-card">
+                    <h4>1. Document Upload</h4>
+                    <p>Documents are submitted via webhook with <code>title</code>, <code>source</code>, and <code>content</code> fields. The API validates and sanitizes all input to prevent injection attacks.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>2. Text Chunking</h4>
+                    <p>Large documents are split into 500-character chunks with 50-character overlap. This ensures context preservation at chunk boundaries while keeping embeddings focused.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>3. Embedding Generation</h4>
+                    <p>Each chunk is converted to a 768-dimensional vector using <code>nomic-embed-text</code> via Ollama. This captures semantic meaning, not just keywords.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>4. Vector Indexing</h4>
+                    <p>Embeddings are stored in Elasticsearch with <code>dense_vector</code> type and cosine similarity indexing for fast approximate nearest neighbor search.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Pipeline -->
+        <div class="pipeline-section">
+            <div class="pipeline-title">
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Semantic Search Pipeline
+            </div>
+
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    Query
+                    <div class="pipeline-step-detail">Natural language</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Embed Query
+                    <div class="pipeline-step-detail">Same model</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Vector Search
+                    <div class="pipeline-step-detail">Cosine similarity</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Rank Results
+                    <div class="pipeline-step-detail">Top-K retrieval</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    Return
+                    <div class="pipeline-step-detail">With scores</div>
+                </div>
+            </div>
+
+            <div class="pipeline-details">
+                <div class="pipeline-detail-card">
+                    <h4>1. Query Embedding</h4>
+                    <p>User's natural language question is converted to the same 768-dim vector space using <code>nomic-embed-text</code>. This allows semantic matching.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>2. Cosine Similarity</h4>
+                    <p>Elasticsearch computes cosine similarity between query vector and all indexed document vectors. Values range from -1 to 1, with 1 being identical.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>3. Top-K Retrieval</h4>
+                    <p>The most similar chunks are retrieved (default: 5). Results include the original text, source metadata, and similarity score as percentage.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>4. RAG Augmentation</h4>
+                    <p>Retrieved chunks can be injected into LLM prompts as context, enabling the model to answer questions using your specific knowledge base.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Highlights -->
+        <div class="pipeline-section">
+            <div class="pipeline-title">
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Key Technical Aspects
+            </div>
+
+            <div class="pipeline-details">
+                <div class="pipeline-detail-card">
+                    <h4>Local Embedding Model</h4>
+                    <p>768-dimensional vectors optimized for retrieval. Runs entirely on-premise with no external API calls required.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>Smart Chunking</h4>
+                    <p>Documents split into overlapping segments to preserve context at boundaries while keeping embeddings focused and relevant.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>Semantic Matching</h4>
+                    <p>Cosine similarity compares meaning, not keywords. Find relevant content even when exact terms don't match.</p>
+                </div>
+                <div class="pipeline-detail-card">
+                    <h4>Visual Workflow Builder</h4>
+                    <p>No-code pipeline configuration. Easily modify processing steps, add data sources, or adjust parameters.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features">
+        <h2>Platform Features</h2>
+        <p class="section-subtitle">
+            Key components of the reference architecture
+        </p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="feature-title">AI Chat Interface</div>
+                </div>
+                <p class="feature-desc">
+                    Multi-model chat with Llama 3, Mistral, CodeLlama, and vision models.
+                    Supports knowledge bases, file uploads, and conversation history.
+                </p>
+                <a href="https://ai4u.strali.solutions" class="feature-link">
+                    Open Chat →
+                </a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                    <div class="feature-title">Semantic Search</div>
+                </div>
+                <p class="feature-desc">
+                    Vector similarity search powered by Elasticsearch.
+                    Find relevant documents using natural language queries, not just keywords.
+                </p>
+                <a href="https://ai4u.strali.solutions/search" class="feature-link">
+                    Try Search →
+                </a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <div class="feature-title">RAG Pipeline</div>
+                </div>
+                <p class="feature-desc">
+                    Automated document ingestion with chunking, embedding generation,
+                    and vector indexing. Supports text, PDF, and structured data.
+                </p>
+                <a href="#documents" class="feature-link">
+                    View Documents →
+                </a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    </div>
+                    <div class="feature-title">Workflow Automation</div>
+                </div>
+                <p class="feature-desc">
+                    Visual workflows for document processing, scheduled ingestion,
+                    and API integrations. No-code pipeline builder included.
+                </p>
+                <a href="https://n8n.strali.solutions" class="feature-link">
+                    Open n8n →
+                </a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <div class="feature-title">Self-Hosted & Secure</div>
+                </div>
+                <p class="feature-desc">
+                    All data stays on-premise. No external API calls for inference.
+                    Full control over your AI infrastructure.
+                </p>
+                <a href="https://strali.solutions/#ai-platforms" class="feature-link">
+                    Learn More →
+                </a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div class="feature-title">EU AI Act Compliant</div>
+                </div>
+                <p class="feature-desc">
+                    Article 50 transparency requirements met. Clear AI disclosure,
+                    legal notices, and data processing information displayed.
+                </p>
+                <a href="https://strali.solutions/datenschutz" class="feature-link">
+                    Privacy Policy →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Try It -->
+    <section id="try-it">
+        <h2>Try These Queries</h2>
+        <p class="section-subtitle">
+            Test the semantic search with these sample questions from our knowledge base
+        </p>
+
+        <div class="queries-grid">
+            <a href="https://ai4u.strali.solutions/search?q=What%20are%20the%20password%20requirements" class="query-card">
+                <div class="query-text">"What are the password requirements?"</div>
+                <div class="query-source">IT Security Policy</div>
+            </a>
+            <a href="https://ai4u.strali.solutions/search?q=How%20much%20is%20the%20home%20office%20budget" class="query-card">
+                <div class="query-text">"How much is the home office budget?"</div>
+                <div class="query-source">Benefits / Expense Policy</div>
+            </a>
+            <a href="https://ai4u.strali.solutions/search?q=What%20is%20the%20API%20rate%20limit" class="query-card">
+                <div class="query-text">"What is the API rate limit?"</div>
+                <div class="query-source">API Documentation</div>
+            </a>
+            <a href="https://ai4u.strali.solutions/search?q=How%20do%20I%20submit%20expenses" class="query-card">
+                <div class="query-text">"How do I submit expenses?"</div>
+                <div class="query-source">Expense Policy</div>
+            </a>
+            <a href="https://ai4u.strali.solutions/search?q=What%20are%20the%20core%20work%20hours" class="query-card">
+                <div class="query-text">"What are the core work hours?"</div>
+                <div class="query-source">Remote Work Guidelines</div>
+            </a>
+            <a href="https://ai4u.strali.solutions/search?q=What%20is%20the%20code%20review%20process" class="query-card">
+                <div class="query-text">"What is the code review process?"</div>
+                <div class="query-source">Engineering Practices</div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Documents -->
+    <section id="documents">
+        <h2>Indexed Knowledge Base</h2>
+        <p class="section-subtitle">
+            Sample company documents demonstrating RAG capabilities
+        </p>
+
+        <div style="overflow-x: auto;">
+            <table class="docs-table">
+                <thead>
+                    <tr>
+                        <th>Document</th>
+                        <th>Source</th>
+                        <th>Topics Covered</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Employee Onboarding Guide</td>
+                        <td>HR Department</td>
+                        <td>Day 1-14 process, equipment, benefits overview</td>
+                    </tr>
+                    <tr>
+                        <td>IT Security Policy</td>
+                        <td>IT Security Team</td>
+                        <td>Passwords, 2FA, data classification, incident reporting</td>
+                    </tr>
+                    <tr>
+                        <td>Expense Reimbursement Policy</td>
+                        <td>Finance Department</td>
+                        <td>Travel, meals, equipment, submission process</td>
+                    </tr>
+                    <tr>
+                        <td>Product API Documentation</td>
+                        <td>Engineering Team</td>
+                        <td>REST endpoints, authentication, rate limits, webhooks</td>
+                    </tr>
+                    <tr>
+                        <td>Remote Work Guidelines</td>
+                        <td>HR Department</td>
+                        <td>Core hours, communication, home office setup</td>
+                    </tr>
+                    <tr>
+                        <td>Engineering Best Practices</td>
+                        <td>Engineering Team</td>
+                        <td>Code review, testing, git workflow, deployment</td>
+                    </tr>
+                    <tr>
+                        <td>Customer Support Procedures</td>
+                        <td>Support Team</td>
+                        <td>Response SLAs, escalation path, ticket workflow</td>
+                    </tr>
+                    <tr>
+                        <td>Company Benefits Overview</td>
+                        <td>HR Department</td>
+                        <td>Health, 401k, PTO, wellness, professional development</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Important Notice -->
+    <section id="notice">
+        <h2>Reference Architecture Notice</h2>
+        <p class="section-subtitle">
+            Understanding what this demo provides — and what production requires
+        </p>
+
+        <div class="notice-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-top: 2rem;">
+            <div class="card">
+                <h3 style="color: var(--success); margin-bottom: 1rem;">What This Demo Provides</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">✓ Fully working RAG pipeline with local LLMs and vector search</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">✓ Self-hosted design — no external API costs or cloud dependencies</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">✓ Clean, documented codebase suitable for learning and adaptation</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">✓ Sample documents and workflows demonstrating real flows</li>
+                    <li style="padding: 0.5rem 0;">✓ EU AI Act awareness: transparency notices and compliance-ready patterns</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3 style="color: var(--warning); margin-bottom: 1rem;">What Production Requires</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">→ Data governance and access control tailored to your organization</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">→ Infrastructure scaling, high availability, and disaster recovery</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">→ Security hardening, penetration testing, and vulnerability management</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">→ EU AI Act compliance: formal risk assessment and audit mechanisms</li>
+                    <li style="padding: 0.5rem 0;">→ Organizational alignment: training and change management</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--text);">Our Services</h3>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                <span style="background: var(--primary); padding: 0.75rem 1.5rem; border-radius: 2rem; font-weight: 500;">Architecture Consulting</span>
+                <span style="background: var(--primary); padding: 0.75rem 1.5rem; border-radius: 2rem; font-weight: 500;">Security & Compliance Review</span>
+                <span style="background: var(--primary); padding: 0.75rem 1.5rem; border-radius: 2rem; font-weight: 500;">End-to-End Implementation</span>
+                <span style="background: var(--primary); padding: 0.75rem 1.5rem; border-radius: 2rem; font-weight: 500;">Training & Knowledge Transfer</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section>
+        <div class="cta">
+            <h2>Ready to Move from Demo to Production?</h2>
+            <p>
+                We help businesses deploy self-hosted AI solutions tailored to their needs.
+                Get expert guidance on architecture, security, and compliance.
+            </p>
+            <a href="https://strali.solutions/#kontakt" class="btn-large btn-accent" style="background: white; color: var(--primary);">
+                Request a Consultation
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="https://strali.solutions">Strali Solutions</a>
+            <a href="https://ai4u.strali.solutions">AI Chat</a>
+            <a href="https://ai4u.strali.solutions/search">Semantic Search</a>
+            <a href="https://n8n.strali.solutions">n8n Workflows</a>
+            <a href="https://github.com/achildrenmile/rag-reference-architecture">GitHub</a>
+        </div>
+        <p class="footer-legal">
+            By using this service, you agree to our
+            <a href="https://strali.solutions/impressum">Imprint</a> and
+            <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
+            <br>
+            &copy; 2026 Strali Solutions. This is a demonstration platform.
+        </p>
+    </footer>
+
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "RAG Reference Architecture Demo",
+        "description": "Reference architecture demonstrating RAG patterns with AI chat, semantic search, and workflow automation.",
+        "url": "https://ai4u.strali.solutions/static/showcase.html",
+        "applicationCategory": "AI Platform",
+        "operatingSystem": "Web",
+        "provider": {
+            "@type": "Organization",
+            "name": "Strali Solutions",
+            "url": "https://strali.solutions"
+        },
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "description": "Free demo access"
+        }
+    }
+    </script>
+</body>
+</html>

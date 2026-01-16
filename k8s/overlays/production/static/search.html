@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Search | Strali Solutions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a237e;
+            --primary-light: #3949ab;
+            --accent: #4f46e5;
+            --accent-light: #818cf8;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 2rem;
+            padding-bottom: 5rem;
+            cursor: default;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(26, 35, 126, 0.25), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(79, 70, 229, 0.1), transparent);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: var(--text);
+        }
+
+        /* Title Section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, var(--accent-light), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Pipeline */
+        .pipeline {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            line-height: 2;
+        }
+
+        /* Search Box */
+        .search-box {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.2);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            background: var(--primary);
+            color: var(--text);
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(26, 35, 126, 0.4);
+        }
+
+        button:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Results */
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.4s ease;
+        }
+
+        .result-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .result-score {
+            background: var(--accent);
+            color: var(--text);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .result-content {
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .result-meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        /* Example Queries */
+        .example-queries {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .example-queries p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .query-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .query-chip {
+            display: inline-block;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .query-chip:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--text);
+            transform: translateY(-2px);
+        }
+
+        /* Messages */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(127, 29, 29, 0.3);
+            border: 1px solid #dc2626;
+            color: #fecaca;
+            padding: 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .info {
+            background: var(--bg-card);
+            border: 1px solid var(--primary);
+            color: var(--accent-light);
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.875rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--accent-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: var(--text);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+                padding-bottom: 5rem;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .pipeline {
+                gap: 0.25rem;
+            }
+
+            .pipeline-step {
+                font-size: 0.7rem;
+                padding: 0.4rem 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <a href="https://strali.solutions" class="logo-link">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" class="logo">
+                    <rect x="0" y="0" width="40" height="40" rx="6" fill="#1a237e"/>
+                    <text x="11" y="31" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="bold" fill="white">S</text>
+                    <text x="45" y="26" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc">trali</text>
+                    <text x="45" y="39" font-family="Inter, Arial, sans-serif" font-size="12" letter-spacing="0.5" fill="#94a3b8">solutions</text>
+                </svg>
+            </a>
+            <a href="javascript:history.back()" class="back-link">← Back</a>
+        </header>
+
+        <!-- Title -->
+        <div class="title-section">
+            <h1>Semantic Search</h1>
+            <p class="subtitle">AI-powered vector similarity search across your knowledge base</p>
+        </div>
+
+        <!-- Pipeline -->
+        <div class="pipeline">
+            <span class="pipeline-step">Query</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step">Embed</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step">Vector Search</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step">Results</span>
+        </div>
+
+        <!-- Search -->
+        <div class="search-box">
+            <input type="text" id="query" placeholder="Enter your search query..." autofocus>
+            <button id="searchBtn" onclick="search()">Search</button>
+        </div>
+
+        <!-- Example Queries -->
+        <div class="example-queries">
+            <p>Try these queries:</p>
+            <div class="query-chips">
+                <span class="query-chip" onclick="setQuery('How do I submit expenses?')">How do I submit expenses?</span>
+                <span class="query-chip" onclick="setQuery('What are the remote work policies?')">Remote work policies</span>
+                <span class="query-chip" onclick="setQuery('API authentication')">API authentication</span>
+                <span class="query-chip" onclick="setQuery('Employee benefits')">Employee benefits</span>
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://n8n.strali.solutions/webhook/search';
+
+        document.getElementById('query').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') search();
+        });
+
+        // Check for query parameter on page load
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('q');
+            if (q) {
+                document.getElementById('query').value = q;
+                setTimeout(search, 100);
+            }
+        })();
+
+        function setQuery(text) {
+            document.getElementById('query').value = text;
+            search();
+        }
+
+        async function search() {
+            const query = document.getElementById('query').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Searching...';
+            resultsDiv.innerHTML = '<div class="loading"><span class="loading-spinner"></span>Generating embedding and searching...</div>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, limit: 5 })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}<br><br>Make sure the search workflow is active in n8n.</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Search';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data.results || data.results.length === 0) {
+                resultsDiv.innerHTML = '<div class="info">No results found. Try different keywords or check if documents have been indexed.</div>';
+                return;
+            }
+
+            const html = data.results.map(r => `
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="result-title">${escapeHtml(r.title)}</span>
+                        <span class="result-score">${(r.score * 100).toFixed(1)}% match</span>
+                    </div>
+                    <div class="result-content">${escapeHtml(r.content)}</div>
+                    <div class="result-meta">
+                        Source: ${escapeHtml(r.source)} • ${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'Unknown date'}
+                    </div>
+                </div>
+            `).join('');
+
+            resultsDiv.innerHTML = `
+                <div class="info">Found ${data.total} result(s) for: "${escapeHtml(data.query)}"</div>
+                <div class="results">${html}</div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+    </script>
+
+    <footer>
+        By using this service, you agree to our
+        <a href="https://strali.solutions/impressum">Imprint</a> and
+        <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
+    </footer>
+</body>
+</html>

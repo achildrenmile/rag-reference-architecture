@@ -5,5 +5,15 @@ namespace: rag-demo
 
 resources:
   - ../../base
-  - secrets.yaml
-  - configmap-static-files.yaml
+  # secrets.yaml is managed manually (not in git)
+  # Apply with: kubectl apply -f k8s/overlays/production/secrets.yaml
+
+# Generate ConfigMap from static files
+configMapGenerator:
+  - name: openwebui-static-files
+    files:
+      - static/search.html
+      - static/showcase.html
+      - static/loader.js
+    options:
+      disableNameSuffixHash: true
