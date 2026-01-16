@@ -15,6 +15,9 @@ k8s/overlays/*/secrets.yaml
 # Security assessment (contains sensitive details)
 SECURITY-ASSESSMENT.md
 
+# Local-only documentation (may contain IPs, access info)
+docs/k3s-management-stack.md
+
 # Docker volumes (if local)
 data/
 volumes/
