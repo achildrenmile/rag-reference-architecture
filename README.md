@@ -68,6 +68,14 @@ If you're exploring RAG for your organization, we offer consulting, architecture
 ├── .env                   # Actual environment variables (not in repo)
 ├── .gitignore             # Excluded files
 ├── k8s/                   # Kubernetes (k3s) manifests
+│   ├── apps/              # Argo CD Application definitions (GitOps)
+│   │   ├── root.yaml      # App-of-apps root application
+│   │   ├── argocd.yaml    # Argo CD self-management
+│   │   ├── headlamp.yaml  # Kubernetes Web UI
+│   │   └── rag-demo.yaml  # RAG stack application
+│   ├── infrastructure/    # Helm values for platform components
+│   │   ├── argocd/
+│   │   └── headlamp/
 │   ├── base/              # Base Kustomize manifests
 │   │   ├── namespace.yaml
 │   │   ├── kustomization.yaml
@@ -80,6 +88,7 @@ If you're exploring RAG for your organization, we offer consulting, architecture
 │   └── overlays/
 │       └── production/
 │           ├── kustomization.yaml
+│           ├── static/               # Static files for ConfigMap
 │           ├── secrets.yaml.example  # Secrets template
 │           └── secrets.yaml          # Actual secrets (not in repo)
 ├── scripts/
@@ -267,6 +276,102 @@ kubectl exec -n rag-demo deployment/ollama -- ollama list
    - `semantic-search-workflow.json` - Vector search API
    - `scheduled-ingestion-workflow.json` - RSS auto-ingestion (optional)
 3. Activate the workflows
+
+---
+
+## GitOps with Argo CD (Optional)
+
+For production deployments, this repository supports full GitOps using Argo CD with the **app-of-apps pattern**. This enables:
+
+- **Declarative configuration**: All cluster state defined in Git
+- **Automatic sync**: Changes pushed to `main` are automatically deployed
+- **Self-healing**: Manual cluster changes are reverted to match Git
+- **Audit trail**: Git history provides complete change log
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Argo CD                               │
+│                   (GitOps Controller)                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │    root     │  │   argocd    │  │      headlamp       │  │
+│  │ (app-of-apps)│  │(self-managed)│  │   (Kubernetes UI)   │  │
+│  └──────┬──────┘  └─────────────┘  └─────────────────────┘  │
+│         │                                                    │
+│         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                    rag-demo                          │    │
+│  │  (Elasticsearch, Ollama, OpenWebUI, n8n, MCPO, etc.) │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Applications Managed
+
+| Application | Type | Description |
+|-------------|------|-------------|
+| `root` | App-of-Apps | Manages all other applications |
+| `argocd` | Helm | Argo CD self-management |
+| `headlamp` | Helm | Kubernetes Web UI for cluster visibility |
+| `rag-demo` | Kustomize | The RAG stack (from `k8s/overlays/production`) |
+
+### Setup GitOps
+
+1. **Install Argo CD** (if not already installed):
+   ```bash
+   helm repo add argo https://argoproj.github.io/argo-helm
+   helm install argocd argo/argo-cd \
+     --namespace argocd --create-namespace \
+     --set configs.params."server\.insecure"=true \
+     --set dex.enabled=false \
+     --set notifications.enabled=false
+   ```
+
+2. **Bootstrap the app-of-apps**:
+   ```bash
+   kubectl apply -f k8s/apps/root.yaml
+   ```
+
+3. **Verify applications**:
+   ```bash
+   kubectl get applications -n argocd
+   ```
+
+### GitOps Workflow
+
+Once set up, the workflow is:
+
+1. Edit manifests in `k8s/` directory
+2. Commit and push to `main`
+3. Argo CD automatically syncs within ~3 minutes
+4. View status in Argo CD UI or via `kubectl get applications -n argocd`
+
+### Secrets Handling
+
+Secrets are **not stored in Git** (security best practice). They must be applied manually:
+
+```bash
+# Apply secrets separately
+kubectl apply -f k8s/overlays/production/secrets.yaml
+```
+
+For advanced secrets management, consider:
+- [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
+- [External Secrets Operator](https://external-secrets.io/)
+- [HashiCorp Vault](https://www.vaultproject.io/)
+
+### Access Argo CD UI
+
+```bash
+# Port forward
+kubectl port-forward svc/argocd-server -n argocd 8080:80
+
+# Get admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
 
 ---
 
