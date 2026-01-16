@@ -292,19 +292,19 @@ For production deployments, this repository supports full GitOps using Argo CD w
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Argo CD                               │
-│                   (GitOps Controller)                        │
+│                        Argo CD                              │
+│                   (GitOps Controller)                       │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │    root     │  │   argocd    │  │      headlamp       │  │
-│  │ (app-of-apps)│  │(self-managed)│  │   (Kubernetes UI)   │  │
-│  └──────┬──────┘  └─────────────┘  └─────────────────────┘  │
-│         │                                                    │
-│         ▼                                                    │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────┐│
+│  │    root      │  │   argocd     │  │      headlamp       ││
+│  │ (app-of-apps) │ │(self-managed)│  │   (Kubernetes UI)   ││
+│  └──────┬───────┘  └──────────────┘  └─────────────────────┘│
+│         │                                                   │
+│         ▼                                                   │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │                    rag-demo                          │    │
-│  │  (Elasticsearch, Ollama, OpenWebUI, n8n, MCPO, etc.) │    │
+│  │                    rag-demo                         │    │
+│  │  (Elasticsearch, Ollama, OpenWebUI, n8n, MCPO, etc.)│    │
 │  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
