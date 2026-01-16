@@ -14,6 +14,8 @@ OpenWebUI            n8n
     ↓                ↓
 Ollama          Elasticsearch
 (LLM Runtime)   (Vector Store)
+    ↓
+Kubernetes (k3s) / Docker Compose
 ```
 
 ### Key Properties
@@ -22,7 +24,7 @@ Ollama          Elasticsearch
 - HTTPS only via Cloudflare
 - Authentication at application level
 - CPU-first inference (GPU optional)
-- Docker-based deployment
+- **Kubernetes (k3s)** or Docker Compose deployment
 - Fully self-hosted
 - EU AI Act compliant (Article 50 transparency)
 
@@ -60,14 +62,35 @@ If you're exploring RAG for your organization, we offer consulting, architecture
 .
 ├── README.md              # This file (public documentation)
 ├── SECURITY.md            # Security hardening guide (public)
-├── docker-compose.yml     # Container orchestration
+├── docker-compose.yml     # Docker Compose orchestration (legacy)
 ├── backup.sh              # Automated backup script
-├── .env.example           # Environment variables template
+├── .env.example           # Environment variables template (Docker)
 ├── .env                   # Actual environment variables (not in repo)
 ├── .gitignore             # Excluded files
+├── k8s/                   # Kubernetes (k3s) manifests
+│   ├── base/              # Base Kustomize manifests
+│   │   ├── namespace.yaml
+│   │   ├── kustomization.yaml
+│   │   ├── elasticsearch/
+│   │   ├── ollama/
+│   │   ├── openwebui/
+│   │   ├── n8n/
+│   │   ├── mcpo/
+│   │   └── cloudflared/
+│   └── overlays/
+│       └── production/
+│           ├── kustomization.yaml
+│           ├── secrets.yaml.example  # Secrets template
+│           └── secrets.yaml          # Actual secrets (not in repo)
+├── scripts/
+│   ├── install-k3s.sh         # k3s installation script
+│   ├── deploy-k3s.sh          # k3s deployment script
+│   ├── disk-monitor.sh        # Uptime Kuma push monitor for disk space
+│   └── ingest-samples.sh      # Ingest sample documents into RAG
 ├── static/
 │   ├── loader.js          # Custom JS for legal footer injection
-│   └── search.html        # Semantic search UI
+│   ├── search.html        # Semantic search UI
+│   └── showcase.html      # Feature showcase page
 ├── mcpo/
 │   └── config.json        # MCPO MCP server configuration
 ├── n8n/
@@ -88,9 +111,6 @@ If you're exploring RAG for your organization, we offer consulting, architecture
 │   ├── 06-engineering-practices.txt
 │   ├── 07-support-procedures.txt
 │   └── 08-benefits-overview.txt
-├── scripts/
-│   ├── disk-monitor.sh        # Uptime Kuma push monitor for disk space
-│   └── ingest-samples.sh      # Ingest sample documents into RAG
 ├── CREDENTIALS.md         # Sensitive credentials (not in repo)
 ├── SECURITY-ASSESSMENT.md # Security assessment details (not in repo)
 └── models/                # Model configurations (future)
@@ -119,21 +139,140 @@ If you're exploring RAG for your organization, we offer consulting, architecture
 sudo apt update && sudo apt full-upgrade -y
 
 # Install dependencies
-sudo apt install -y ca-certificates curl gnupg git htop jq unzip build-essential net-tools
-
-# Disable swap (recommended for Elasticsearch)
-sudo swapoff -a
-sudo sed -i '/ swap / s/^/#/' /etc/fstab
-
-# Set Elasticsearch kernel parameter
-sudo sysctl -w vm.max_map_count=262144
-echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-elasticsearch.conf
+sudo apt install -y ca-certificates curl gnupg git htop jq unzip net-tools
 
 # Reboot
 sudo reboot
 ```
 
-### Step 3: Docker Installation
+### Step 3: Clone Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/rag-reference-architecture.git
+cd rag-reference-architecture
+```
+
+---
+
+## Deployment Options
+
+Choose **one** of the following deployment methods:
+
+- **[Option A: Kubernetes (k3s)](#option-a-kubernetes-k3s-deployment)** - Recommended for production
+- **[Option B: Docker Compose](#option-b-docker-compose-deployment)** - Simpler setup for development
+
+---
+
+## Option A: Kubernetes (k3s) Deployment
+
+### Step 4: Install k3s
+
+```bash
+# Run the installation script
+sudo ./scripts/install-k3s.sh
+```
+
+This script:
+- Disables swap
+- Configures kernel modules and sysctl settings
+- Installs k3s with Traefik and ServiceLB disabled
+- Sets up kubeconfig for your user
+
+After installation, log out and back in, or run:
+```bash
+export KUBECONFIG=~/.kube/config
+```
+
+### Step 5: Configure Secrets
+
+```bash
+# Copy the secrets template
+cp k8s/overlays/production/secrets.yaml.example k8s/overlays/production/secrets.yaml
+
+# Edit with your values
+nano k8s/overlays/production/secrets.yaml
+```
+
+Required secrets:
+- `openwebui-secrets.secret-key` - Random 32-byte hex string for session encryption
+- `cloudflared-secrets.tunnel-token` - Cloudflare Tunnel token
+- `mcpo-secrets.github-token` - GitHub personal access token (optional)
+
+Generate a secret key:
+```bash
+openssl rand -hex 32
+```
+
+### Step 6: Deploy to k3s
+
+```bash
+# Run the deployment script
+./scripts/deploy-k3s.sh
+```
+
+This script:
+- Creates the static files ConfigMap
+- Applies all Kustomize manifests
+- Waits for pods to be ready
+- Pulls required Ollama models (nomic-embed-text, phi3:mini)
+
+### Step 7: Verify Deployment
+
+```bash
+# Check all pods are running
+kubectl get pods -n rag-demo
+
+# Check services
+kubectl get svc -n rag-demo
+
+# View logs
+kubectl logs -n rag-demo deployment/openwebui
+```
+
+### Step 8: Access Services (k3s)
+
+For local access via port forwarding:
+```bash
+# OpenWebUI (main interface)
+kubectl port-forward -n rag-demo svc/openwebui 8080:8080
+
+# n8n (workflow automation)
+kubectl port-forward -n rag-demo svc/n8n 5678:5678
+
+# Elasticsearch (vector database)
+kubectl port-forward -n rag-demo svc/elasticsearch 9200:9200
+```
+
+### Step 9: Pull Additional Models (k3s)
+
+```bash
+# Core models
+kubectl exec -n rag-demo deployment/ollama -- ollama pull mistral:7b
+kubectl exec -n rag-demo deployment/ollama -- ollama pull llama3.1:8b
+
+# Specialized models
+kubectl exec -n rag-demo deployment/ollama -- ollama pull llava        # Vision
+kubectl exec -n rag-demo deployment/ollama -- ollama pull llama3.2:3b  # Fast/efficient
+kubectl exec -n rag-demo deployment/ollama -- ollama pull gemma2:2b    # Fast/efficient
+
+# Verify models
+kubectl exec -n rag-demo deployment/ollama -- ollama list
+```
+
+### Step 10: Import n8n Workflows (k3s)
+
+1. Access n8n via port forwarding or your tunnel URL
+2. Import workflows from the `n8n/` directory:
+   - `rag-ingestion-workflow.json` - Document ingestion pipeline
+   - `semantic-search-workflow.json` - Vector search API
+   - `scheduled-ingestion-workflow.json` - RSS auto-ingestion (optional)
+3. Activate the workflows
+
+---
+
+## Option B: Docker Compose Deployment
+
+### Step 4: Install Docker
 
 ```bash
 # Install Docker
@@ -143,13 +282,6 @@ newgrp docker
 
 # Verify installation
 docker version
-```
-
-### Step 4: Clone Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/rag-reference-architecture.git
-cd rag-reference-architecture
 ```
 
 ### Step 5: Configure Environment
@@ -164,6 +296,7 @@ nano .env
 
 Required variables (see `.env.example` for details):
 - `TUNNEL_TOKEN` - Cloudflare Tunnel token
+- `WEBUI_SECRET_KEY` - Random secret for session encryption
 
 ### Step 6: Start Services
 
@@ -175,24 +308,23 @@ docker compose up -d
 docker ps
 ```
 
-### Step 7: Pull LLM Models
+### Step 7: Pull LLM Models (Docker)
 
 ```bash
 # Pull core models
 docker exec ollama ollama pull mistral:7b
-docker exec ollama ollama pull llama3:8b
+docker exec ollama ollama pull llama3.1:8b
 docker exec ollama ollama pull phi3:mini
 
 # Pull optional specialized models
-docker exec ollama ollama pull codellama:7b   # Code generation
-docker exec ollama ollama pull llava:7b       # Vision/image understanding
-docker exec ollama ollama pull qwen2:1.5b     # Fast responses
+docker exec ollama ollama pull llava          # Vision/image understanding
+docker exec ollama ollama pull llama3.2:3b    # Fast responses
 
 # Verify models
 docker exec ollama ollama list
 ```
 
-### Step 8: Verify Services
+### Step 8: Verify Services (Docker)
 
 ```bash
 # Check Elasticsearch
@@ -205,9 +337,13 @@ curl http://localhost:11434/api/tags
 curl -I http://localhost:3000
 ```
 
-### Step 9: OpenWebUI Initial Setup
+---
 
-1. Access OpenWebUI at `http://localhost:3000` (or via your tunnel URL)
+## Common Setup Steps
+
+### OpenWebUI Initial Setup
+
+1. Access OpenWebUI at your URL (port 8080 for k3s, port 3000 for Docker)
 2. Create admin account on first access
 3. Configure settings:
    - **Admin Settings** → **General** → Disable "Enable New Sign Ups"
@@ -333,21 +469,31 @@ ENABLE_RAG_HYBRID_SEARCH: "true"
 
 ## Available Models
 
-| Model | Size | Best For |
-|-------|------|----------|
-| mistral:7b | 4.4 GB | General chat, reasoning |
-| llama3:8b | 4.7 GB | General purpose, longer context |
-| phi3:mini | 2.2 GB | Fast responses, resource-efficient |
-| codellama:7b | 3.8 GB | Code generation and analysis |
-| llava:7b | 4.7 GB | Image understanding, vision tasks |
-| qwen2:1.5b | 934 MB | Quick responses, low latency |
+Models suitable for CPU-only inference (tested on AMD Ryzen 9 8945HS, 32GB RAM):
+
+| Model | Size | Best For | Notes |
+|-------|------|----------|-------|
+| phi3:mini | 2.2 GB | Fast responses, resource-efficient | Good default for demos |
+| gemma2:2b | 1.6 GB | Fast, efficient general chat | Google's efficient model |
+| llama3.2:3b | 2.0 GB | Balanced speed/quality | Latest Llama release |
+| mistral:7b | 4.1 GB | General chat, reasoning | Excellent quality |
+| llama3.1:8b | 4.7 GB | General purpose, longer context | High quality |
+| llava | 4.7 GB | Vision/image understanding | Multimodal (images) |
+| nomic-embed-text | 274 MB | Embeddings for RAG | Required for vector search |
 
 ### Model Selection Guide
 
-- **General Chat**: Use `mistral:7b` or `llama3:8b` for best quality
-- **Code Tasks**: Use `codellama:7b` for writing, debugging, and explaining code
-- **Image Analysis**: Use `llava:7b` for describing images, reading diagrams, OCR
-- **Fast Responses**: Use `qwen2:1.5b` or `phi3:mini` for quick interactions
+- **General Chat**: Use `mistral:7b` or `llama3.1:8b` for best quality
+- **Image Analysis**: Use `llava` for describing images, reading diagrams, OCR
+- **Fast Responses**: Use `phi3:mini`, `gemma2:2b`, or `llama3.2:3b` for quick interactions
+- **RAG Embeddings**: `nomic-embed-text` is required for the semantic search workflow
+
+### Hardware Considerations
+
+For CPU-only inference (no NVIDIA GPU):
+- 2B-3B models: Fast responses, good for demos
+- 7B-8B models: Better quality, slower on CPU
+- Larger models (13B+): Not recommended without GPU
 
 ## MCP Tools
 
@@ -781,6 +927,18 @@ For controlled demo access without Cloudflare Access:
 
 ### View Logs
 
+**k3s:**
+```bash
+# All pods
+kubectl logs -n rag-demo -l app --all-containers
+
+# Specific service
+kubectl logs -n rag-demo deployment/openwebui -f
+kubectl logs -n rag-demo deployment/n8n -f
+kubectl logs -n rag-demo deployment/ollama -f
+```
+
+**Docker Compose:**
 ```bash
 # All services
 docker compose logs -f
@@ -791,14 +949,55 @@ docker compose logs -f openwebui
 
 ### Update Services
 
+**k3s:**
+```bash
+# Re-apply manifests (pulls latest images if tags changed)
+kubectl apply -k k8s/overlays/production
+
+# Force restart a deployment
+kubectl rollout restart deployment/openwebui -n rag-demo
+```
+
+**Docker Compose:**
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
+### Check Status
+
+**k3s:**
+```bash
+# Pod status
+kubectl get pods -n rag-demo
+
+# Service endpoints
+kubectl get svc -n rag-demo
+
+# PVC status
+kubectl get pvc -n rag-demo
+
+# Resource usage
+kubectl top pods -n rag-demo
+```
+
 ### Backup Data
 
-#### Quick Backup (Online)
+#### k3s Backup
+
+Backup PersistentVolumeClaims:
+```bash
+# List PVCs
+kubectl get pvc -n rag-demo
+
+# Backup a specific PVC (example: openwebui-data)
+kubectl exec -n rag-demo deployment/openwebui -- tar -czvf - /app/backend/data > openwebui-backup.tar.gz
+
+# Backup Elasticsearch data
+kubectl exec -n rag-demo deployment/elasticsearch -- tar -czvf - /usr/share/elasticsearch/data > elasticsearch-backup.tar.gz
+```
+
+#### Docker Compose Backup (Online)
 
 Backup without stopping services using Docker containers to access volumes:
 
@@ -1044,10 +1243,21 @@ cat /proc/sys/vm/max_map_count
 
 # Fix if needed
 sudo sysctl -w vm.max_map_count=262144
+echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-elasticsearch.conf
 ```
 
 ### Cloudflared not connecting
 
+**k3s:**
+```bash
+# Check logs
+kubectl logs -n rag-demo deployment/cloudflared
+
+# Verify secret exists
+kubectl get secret -n rag-demo cloudflared-secrets
+```
+
+**Docker Compose:**
 ```bash
 # Check logs
 docker logs cloudflared
@@ -1058,18 +1268,73 @@ docker exec cloudflared printenv TUNNEL_TOKEN
 
 ### OpenWebUI can't reach Ollama
 
+**k3s:**
+```bash
+# Check Ollama service
+kubectl get svc -n rag-demo ollama
+
+# Test connectivity from OpenWebUI pod
+kubectl exec -n rag-demo deployment/openwebui -- curl http://ollama:11434/api/tags
+```
+
+**Docker Compose:**
 ```bash
 # Verify Ollama is running
 docker exec openwebui curl http://ollama:11434/api/tags
 ```
 
+### Pods stuck in Pending (k3s)
+
+```bash
+# Check PVC status
+kubectl get pvc -n rag-demo
+
+# Describe pod for events
+kubectl describe pod -n rag-demo <pod-name>
+
+# Check local-path-provisioner logs
+kubectl logs -n kube-system -l app=local-path-provisioner
+```
+
 ### Legal footer not showing
 
+**k3s:**
+```bash
+# Verify ConfigMap exists
+kubectl get configmap -n rag-demo openwebui-static-files
+
+# Recreate static files ConfigMap
+kubectl create configmap openwebui-static-files \
+    --from-file=search.html=static/search.html \
+    --from-file=showcase.html=static/showcase.html \
+    --from-file=loader.js=static/loader.js \
+    -n rag-demo --dry-run=client -o yaml | kubectl apply -f -
+
+# Restart OpenWebUI to pick up changes
+kubectl rollout restart deployment/openwebui -n rag-demo
+```
+
+**Docker Compose:**
 ```bash
 # Verify loader.js is mounted
 docker exec openwebui cat /app/backend/open_webui/static/loader.js
 
 # Clear browser cache or use incognito mode
+```
+
+### n8n webhooks not working (k3s)
+
+```bash
+# Check n8n logs
+kubectl logs -n rag-demo deployment/n8n
+
+# Verify workflow is active
+# In n8n UI, check that workflows are toggled "Active"
+
+# Re-import workflows if needed
+# 1. Delete existing workflow in n8n UI
+# 2. Import from n8n/*.json files
+# 3. Activate the workflow
 ```
 
 ## Credentials Management
