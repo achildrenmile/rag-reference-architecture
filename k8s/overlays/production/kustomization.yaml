@@ -14,6 +14,7 @@ configMapGenerator:
     files:
       - static/search.html
       - static/showcase.html
+      - static/graph-rag.html
       - static/loader.js
     options:
       disableNameSuffixHash: true

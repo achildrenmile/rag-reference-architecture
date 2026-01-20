@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph-Enhanced RAG | Strali Solutions</title>
+    <style>
+        :root {
+            --primary: #1a237e;
+            --primary-light: #3949ab;
+            --accent: #4f46e5;
+            --accent-light: #818cf8;
+            --graph-color: #10b981;
+            --graph-light: #34d399;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        a { text-decoration: none; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 2rem;
+            padding-bottom: 5rem;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(79, 70, 229, 0.1), transparent);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo { height: 40px; }
+        .back-link {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            transition: color 0.3s ease;
+        }
+        .back-link:hover { color: var(--text); }
+
+        .title-section { text-align: center; margin-bottom: 2rem; }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--graph-light), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle { color: var(--text-muted); font-size: 1rem; }
+
+        /* Pipeline Visualization */
+        .pipeline {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .pipeline-step.active {
+            border-color: var(--graph-color);
+            color: var(--graph-light);
+        }
+
+        .pipeline-step.vector { border-color: var(--accent); color: var(--accent-light); }
+        .pipeline-step.graph { border-color: var(--graph-color); color: var(--graph-light); }
+
+        .pipeline-arrow { color: var(--text-muted); }
+
+        /* Search Box */
+        .search-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--graph-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+
+        input::placeholder { color: var(--text-muted); }
+
+        button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--graph-color), var(--primary));
+            color: var(--text);
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+        }
+
+        button:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Options */
+        .options {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #374151;
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: var(--graph-color);
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Results Section */
+        .results-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .panel-icon.graph { background: rgba(16, 185, 129, 0.2); color: var(--graph-light); }
+        .panel-icon.vector { background: rgba(79, 70, 229, 0.2); color: var(--accent-light); }
+        .panel-icon.answer { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+        .panel-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .panel-badge {
+            margin-left: auto;
+            background: rgba(255,255,255,0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Graph Context */
+        .entity-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .entity-tag {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--graph-light);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .graph-content {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .graph-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .graph-content::-webkit-scrollbar-track {
+            background: var(--bg-card);
+        }
+
+        .graph-content::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Answer Section */
+        .answer-panel {
+            grid-column: 1 / -1;
+        }
+
+        .answer-content {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--text);
+        }
+
+        .answer-content p {
+            margin-bottom: 1rem;
+        }
+
+        /* Document Results */
+        .doc-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .doc-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .doc-content {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Loading & Messages */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--graph-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error {
+            background: rgba(127, 29, 29, 0.3);
+            border: 1px solid #dc2626;
+            color: #fecaca;
+            padding: 1.25rem;
+            border-radius: 10px;
+            grid-column: 1 / -1;
+        }
+
+        .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .mode-badge.hybrid {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--graph-light);
+        }
+
+        .mode-badge.vector {
+            background: rgba(79, 70, 229, 0.15);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            color: var(--accent-light);
+        }
+
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.875rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--accent-light);
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover { color: var(--text); }
+
+        .hidden { display: none !important; }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            body { padding: 1rem; padding-bottom: 5rem; }
+            .header { flex-direction: column; gap: 1rem; }
+            h1 { font-size: 1.5rem; }
+            .search-box { flex-direction: column; }
+            button { width: 100%; }
+            .options { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="https://strali.solutions">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" class="logo">
+                    <rect x="0" y="0" width="40" height="40" rx="6" fill="#10b981"/>
+                    <text x="11" y="31" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="bold" fill="white">S</text>
+                    <text x="45" y="26" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc">trali</text>
+                    <text x="45" y="39" font-family="Inter, Arial, sans-serif" font-size="12" letter-spacing="0.5" fill="#94a3b8">solutions</text>
+                </svg>
+            </a>
+            <a href="javascript:history.back()" class="back-link">← Back</a>
+        </header>
+
+        <div class="title-section">
+            <h1>Graph-Enhanced RAG</h1>
+            <p class="subtitle">Combine vector search with knowledge graph reasoning</p>
+        </div>
+
+        <div class="pipeline" id="pipeline">
+            <span class="pipeline-step" id="step-query">Query</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step vector" id="step-embed">Embed</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step vector" id="step-vector">Vector Search</span>
+            <span class="pipeline-arrow" id="arrow-graph">→</span>
+            <span class="pipeline-step graph" id="step-graph">Graph Context</span>
+            <span class="pipeline-arrow">→</span>
+            <span class="pipeline-step" id="step-llm">LLM Answer</span>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="query" placeholder="Ask a question about your knowledge base..." autofocus>
+                <button id="askBtn" onclick="askQuestion()">Ask</button>
+            </div>
+            <div class="options">
+                <div class="toggle-group">
+                    <span class="toggle-label">Hybrid Mode (Graph + Vector)</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="hybridMode" checked onchange="updatePipeline()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-group">
+                    <span class="toggle-label">Show Graph Context</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="showGraph" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-container" id="results"></div>
+    </div>
+
+    <footer>
+        By using this service, you agree to our
+        <a href="https://strali.solutions/impressum">Imprint</a> and
+        <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
+    </footer>
+
+    <script>
+        const API_URL = 'https://n8n.strali.solutions/webhook/rag';
+
+        document.getElementById('query').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') askQuestion();
+        });
+
+        function updatePipeline() {
+            const hybrid = document.getElementById('hybridMode').checked;
+            const graphStep = document.getElementById('step-graph');
+            const graphArrow = document.getElementById('arrow-graph');
+
+            if (hybrid) {
+                graphStep.classList.remove('hidden');
+                graphArrow.classList.remove('hidden');
+            } else {
+                graphStep.classList.add('hidden');
+                graphArrow.classList.add('hidden');
+            }
+        }
+
+        async function askQuestion() {
+            const query = document.getElementById('query').value.trim();
+            const hybridMode = document.getElementById('hybridMode').checked;
+            const showGraph = document.getElementById('showGraph').checked;
+            const resultsDiv = document.getElementById('results');
+            const btn = document.getElementById('askBtn');
+
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Processing your question...</div>
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7">
+                        ${hybridMode ? 'Vector search + Graph reasoning + LLM generation' : 'Vector search + LLM generation'}
+                    </div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        hybrid_mode: hybridMode,
+                        vector_limit: 5,
+                        graph_depth: 2
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                displayResults(data, showGraph);
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${escapeHtml(error.message)}<br><br>
+                        Make sure the hybrid RAG workflow is active in n8n.
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Ask';
+            }
+        }
+
+        function displayResults(data, showGraph) {
+            const resultsDiv = document.getElementById('results');
+            const isHybrid = data.mode === 'hybrid';
+            const entities = data.sources?.entities_extracted || [];
+            const graphUsed = data.sources?.graph_context_used;
+
+            let html = '';
+
+            // Mode indicator
+            html += `
+                <div class="answer-panel result-panel">
+                    <div class="mode-badge ${isHybrid ? 'hybrid' : 'vector'}">
+                        ${isHybrid ? '🔗 Hybrid Mode' : '📄 Vector Only'}
+                        ${isHybrid && graphUsed ? ' • Graph context applied' : ''}
+                    </div>
+                    <div class="panel-header">
+                        <div class="panel-icon answer">💡</div>
+                        <span class="panel-title">Answer</span>
+                    </div>
+                    <div class="answer-content">${formatAnswer(data.answer)}</div>
+                </div>
+            `;
+
+            // Graph context panel (if hybrid and showing graph)
+            if (isHybrid && showGraph && entities.length > 0) {
+                html += `
+                    <div class="result-panel">
+                        <div class="panel-header">
+                            <div class="panel-icon graph">🔗</div>
+                            <span class="panel-title">Extracted Entities</span>
+                            <span class="panel-badge">${entities.length} found</span>
+                        </div>
+                        <div class="entity-list">
+                            ${entities.map(e => `<span class="entity-tag">${escapeHtml(e)}</span>`).join('')}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            These entities were identified in your query and used to retrieve relationship context from the knowledge graph.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Sources panel
+            html += `
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <div class="panel-icon vector">📚</div>
+                        <span class="panel-title">Sources</span>
+                        <span class="panel-badge">${data.sources?.vector_documents || 0} documents</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        Answer generated from ${data.sources?.vector_documents || 0} retrieved document chunks
+                        ${graphUsed ? ' enriched with knowledge graph relationships' : ''}.
+                    </div>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function formatAnswer(text) {
+            if (!text) return '<em>No answer generated.</em>';
+
+            // Convert markdown-like formatting
+            let formatted = escapeHtml(text)
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            return `<p>${formatted}</p>`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // Initialize
+        updatePipeline();
+    </script>
+</body>
+</html>

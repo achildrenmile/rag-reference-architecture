@@ -58,6 +58,10 @@ data:
                 return 301 $redirect_scheme://$host/static/search.html;
             }
 
+            location = /graph-rag {
+                return 301 $redirect_scheme://$host/static/graph-rag.html;
+            }
+
             # Proxy everything else to OpenWebUI
             location / {
                 proxy_pass http://openwebui;
