@@ -1,0 +1,351 @@
+{
+  "name": "Hybrid RAG Pipeline",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://ai4u.strali.solutions"
+        }
+      },
+      "id": "rag-webhook",
+      "name": "RAG Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "hybrid-rag-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\n\nconst query = (body.query || body.question || '').trim();\nif (!query || query.length === 0) {\n  return [{ json: { error: true, message: 'Query is required' } }];\n}\n\nreturn [{\n  json: {\n    query: query.slice(0, 2000),\n    hybrid_mode: body.hybrid_mode !== false,  // Default: true\n    vector_limit: Math.min(body.vector_limit || 5, 10),\n    graph_depth: Math.min(body.graph_depth || 2, 3),\n    model: body.model || 'mistral:7b',\n    error: false\n  }\n}];"
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-valid",
+      "name": "Check Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": {{ JSON.stringify($json.query) }}}"
+      },
+      "id": "embed-query",
+      "name": "Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://elasticsearch:9200/rag-demo/_search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"size\": {{ $('Validate Input').item.json.vector_limit }},\n  \"query\": {\n    \"script_score\": {\n      \"query\": {\"match_all\": {}},\n      \"script\": {\n        \"source\": \"cosineSimilarity(params.query_vector, 'embedding') + 1.0\",\n        \"params\": {\n          \"query_vector\": {{ JSON.stringify($json.embedding) }}\n        }\n      }\n    }\n  }\n}"
+      },
+      "id": "vector-search",
+      "name": "Vector Search (ES)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const esResponse = $input.first().json;\nconst config = $('Validate Input').first().json;\n\nconst hits = esResponse.hits?.hits || [];\nconst vectorResults = hits.map(hit => ({\n  id: hit._id,\n  score: (hit._score - 1).toFixed(4),\n  title: hit._source?.title || 'Untitled',\n  content: hit._source?.content || '',\n  source: hit._source?.source || 'unknown'\n}));\n\n// Build vector context\nlet vectorContext = '';\nif (vectorResults.length > 0) {\n  vectorContext = vectorResults.map((r, i) => \n    `[Document ${i+1}: ${r.title}]\\n${r.content}`\n  ).join('\\n\\n');\n}\n\nreturn [{\n  json: {\n    query: config.query,\n    hybrid_mode: config.hybrid_mode,\n    graph_depth: config.graph_depth,\n    model: config.model,\n    vector_results: vectorResults,\n    vector_context: vectorContext,\n    vector_count: vectorResults.length\n  }\n}];"
+      },
+      "id": "process-vector",
+      "name": "Process Vector Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-hybrid",
+              "leftValue": "={{ $json.hybrid_mode }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-hybrid",
+      "name": "Hybrid Mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"mistral:7b\",\n  \"prompt\": \"Extract key entities (people, teams, services, systems, technologies) from this query. Return ONLY a JSON array of entity names, nothing else.\\n\\nQuery: \" + {{ JSON.stringify($json.query) }} + \"\\n\\nJSON array:\",\n  \"stream\": false,\n  \"options\": { \"temperature\": 0.1, \"num_predict\": 200 }\n}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "extract-entities",
+      "name": "Extract Query Entities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ollamaResponse = $input.first().json.response || '[]';\nconst prevData = $('Process Vector Results').first().json;\n\n// Parse entities from LLM response\nlet entities = [];\ntry {\n  const match = ollamaResponse.match(/\\[[^\\]]*\\]/);\n  if (match) {\n    entities = JSON.parse(match[0]);\n  }\n} catch (e) {\n  // Try to extract quoted strings\n  const quoted = ollamaResponse.match(/[\"']([^\"']+)[\"']/g);\n  if (quoted) {\n    entities = quoted.map(s => s.replace(/[\"']/g, ''));\n  }\n}\n\nentities = entities.filter(e => typeof e === 'string' && e.length > 1).slice(0, 5);\n\nreturn [{\n  json: {\n    ...prevData,\n    extracted_entities: entities\n  }\n}];"
+      },
+      "id": "parse-entities",
+      "name": "Parse Entities",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst entities = data.extracted_entities || [];\nconst depth = data.graph_depth || 2;\n\nif (entities.length === 0) {\n  return [{ json: { ...data, graph_context: '', skip_graph: true } }];\n}\n\n// Build Cypher query to get context for all extracted entities\nconst cypher = `\n  UNWIND $entities AS entityName\n  MATCH (e:Entity)\n  WHERE e.name =~ ('(?i).*' + entityName + '.*')\n  OPTIONAL MATCH (e)-[r1]->(related:Entity)\n  OPTIONAL MATCH (e)<-[r2]-(incoming:Entity)\n  RETURN e.name as entity, e.type as type, e.description as description,\n         collect(DISTINCT {name: related.name, type: related.type, rel: type(r1)})[0..5] as related,\n         collect(DISTINCT {name: incoming.name, type: incoming.type, rel: type(r2)})[0..5] as referenced_by\n  LIMIT 10\n`;\n\nreturn [{\n  json: {\n    ...data,\n    cypher: cypher,\n    cypher_params: { entities: entities },\n    skip_graph: false\n  }\n}];"
+      },
+      "id": "build-graph-query",
+      "name": "Build Graph Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-skip",
+              "leftValue": "={{ $json.skip_graph }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-graph",
+      "name": "Has Entities?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2440, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://neo4j:7474/db/neo4j/tx/commit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"statements\": [{\n    \"statement\": {{ JSON.stringify($json.cypher) }},\n    \"parameters\": {{ JSON.stringify($json.cypher_params) }}\n  }]\n}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "query-graph",
+      "name": "Query Graph (Neo4j)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2660, 0],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "neo4j-creds",
+          "name": "Neo4j Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const neo4jResponse = $input.first().json;\nconst prevData = $('Build Graph Query').first().json;\n\nconst results = neo4jResponse.results?.[0]?.data || [];\n\nlet graphContext = '';\nif (results.length > 0) {\n  graphContext = '## Knowledge Graph Context\\n\\n';\n  results.forEach(r => {\n    const row = r.row;\n    graphContext += `### ${row[0]} (${row[1]})\\n`;\n    if (row[2]) graphContext += `${row[2]}\\n`;\n    \n    const related = (row[3] || []).filter(x => x.name);\n    if (related.length > 0) {\n      graphContext += 'Relationships:\\n';\n      related.forEach(rel => {\n        graphContext += `- ${rel.rel} → ${rel.name} (${rel.type})\\n`;\n      });\n    }\n    \n    const refs = (row[4] || []).filter(x => x.name);\n    if (refs.length > 0) {\n      graphContext += 'Referenced by:\\n';\n      refs.forEach(ref => {\n        graphContext += `- ${ref.name} (${ref.type}) via ${ref.rel}\\n`;\n      });\n    }\n    graphContext += '\\n';\n  });\n}\n\nreturn [{\n  json: {\n    query: prevData.query,\n    model: prevData.model,\n    vector_context: prevData.vector_context,\n    vector_count: prevData.vector_count,\n    graph_context: graphContext,\n    extracted_entities: prevData.extracted_entities,\n    hybrid_mode: true\n  }\n}];"
+      },
+      "id": "format-graph",
+      "name": "Format Graph Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through for vector-only mode\nconst data = $('Process Vector Results').first().json;\nreturn [{\n  json: {\n    query: data.query,\n    model: data.model,\n    vector_context: data.vector_context,\n    vector_count: data.vector_count,\n    graph_context: '',\n    extracted_entities: [],\n    hybrid_mode: false\n  }\n}];"
+      },
+      "id": "vector-only",
+      "name": "Vector Only Mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No entities found, skip graph\nconst data = $('Build Graph Query').first().json;\nreturn [{\n  json: {\n    query: data.query,\n    model: data.model,\n    vector_context: data.vector_context,\n    vector_count: data.vector_count,\n    graph_context: '',\n    extracted_entities: [],\n    hybrid_mode: true\n  }\n}];"
+      },
+      "id": "no-entities",
+      "name": "No Entities Found",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2660, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Combine contexts\nlet fullContext = '';\n\nif (data.graph_context) {\n  fullContext += data.graph_context + '\\n';\n}\n\nif (data.vector_context) {\n  fullContext += '## Retrieved Documents\\n\\n' + data.vector_context;\n}\n\nif (!fullContext.trim()) {\n  fullContext = 'No relevant context found.';\n}\n\n// Build prompt\nconst prompt = `You are a helpful assistant. Answer the question based on the provided context. If the context doesn't contain enough information, say so.\n\nContext:\n${fullContext}\n\nQuestion: ${data.query}\n\nAnswer:`;\n\nreturn [{\n  json: {\n    prompt: prompt,\n    model: data.model,\n    query: data.query,\n    vector_count: data.vector_count,\n    graph_context_used: !!data.graph_context,\n    hybrid_mode: data.hybrid_mode,\n    extracted_entities: data.extracted_entities\n  }\n}];"
+      },
+      "id": "merge-context",
+      "name": "Merge Context",
+      "type": "n8n-nodes-base.merge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3100, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": {{ JSON.stringify($json.model) }},\n  \"prompt\": {{ JSON.stringify($json.prompt) }},\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.7,\n    \"num_predict\": 1000\n  }\n}",
+        "options": { "timeout": 120000 }
+      },
+      "id": "generate-answer",
+      "name": "Generate Answer (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3320, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const llmResponse = $input.first().json;\nconst meta = $('Merge Context').first().json;\n\nreturn [{\n  json: {\n    query: meta.query,\n    answer: llmResponse.response || 'Failed to generate answer.',\n    mode: meta.hybrid_mode ? 'hybrid' : 'vector_only',\n    sources: {\n      vector_documents: meta.vector_count,\n      graph_context_used: meta.graph_context_used,\n      entities_extracted: meta.extracted_entities || []\n    }\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3540, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3760, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: $json.message}) }}",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "RAG Request": {
+      "main": [[{"node": "Validate Input", "type": "main", "index": 0}]]
+    },
+    "Validate Input": {
+      "main": [[{"node": "Check Valid", "type": "main", "index": 0}]]
+    },
+    "Check Valid": {
+      "main": [
+        [{"node": "Embed Query", "type": "main", "index": 0}],
+        [{"node": "Error Response", "type": "main", "index": 0}]
+      ]
+    },
+    "Embed Query": {
+      "main": [[{"node": "Vector Search (ES)", "type": "main", "index": 0}]]
+    },
+    "Vector Search (ES)": {
+      "main": [[{"node": "Process Vector Results", "type": "main", "index": 0}]]
+    },
+    "Process Vector Results": {
+      "main": [[{"node": "Hybrid Mode?", "type": "main", "index": 0}]]
+    },
+    "Hybrid Mode?": {
+      "main": [
+        [{"node": "Extract Query Entities", "type": "main", "index": 0}],
+        [{"node": "Vector Only Mode", "type": "main", "index": 0}]
+      ]
+    },
+    "Extract Query Entities": {
+      "main": [[{"node": "Parse Entities", "type": "main", "index": 0}]]
+    },
+    "Parse Entities": {
+      "main": [[{"node": "Build Graph Query", "type": "main", "index": 0}]]
+    },
+    "Build Graph Query": {
+      "main": [[{"node": "Has Entities?", "type": "main", "index": 0}]]
+    },
+    "Has Entities?": {
+      "main": [
+        [{"node": "Query Graph (Neo4j)", "type": "main", "index": 0}],
+        [{"node": "No Entities Found", "type": "main", "index": 0}]
+      ]
+    },
+    "Query Graph (Neo4j)": {
+      "main": [[{"node": "Format Graph Context", "type": "main", "index": 0}]]
+    },
+    "Format Graph Context": {
+      "main": [[{"node": "Merge Context", "type": "main", "index": 0}]]
+    },
+    "Vector Only Mode": {
+      "main": [[{"node": "Merge Context", "type": "main", "index": 0}]]
+    },
+    "No Entities Found": {
+      "main": [[{"node": "Merge Context", "type": "main", "index": 0}]]
+    },
+    "Merge Context": {
+      "main": [[{"node": "Generate Answer (LLM)", "type": "main", "index": 0}]]
+    },
+    "Generate Answer (LLM)": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Success Response", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Hybrid RAG pipeline combining Elasticsearch vector search with Neo4j graph context. Supports both hybrid and vector-only modes."
+  }
+}
