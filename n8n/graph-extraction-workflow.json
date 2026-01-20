@@ -1,0 +1,233 @@
+{
+  "name": "Graph Entity Extraction Pipeline",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "extract-graph",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "extract-webhook",
+      "name": "Extract Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "extract-graph-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\n\nif (typeof body.content !== 'string' || body.content.trim().length === 0) {\n  return [{ json: { error: true, message: 'Content is required' } }];\n}\n\nconst content = body.content.trim().slice(0, 15000);\nconst doc_id = body.doc_id || `doc_${Date.now()}`;\nconst title = body.title || 'Untitled';\nconst source = body.source || 'unknown';\n\nreturn [{\n  json: {\n    content,\n    doc_id,\n    title,\n    source,\n    error: false\n  }\n}];"
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-valid",
+      "name": "Check Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"mistral:7b\",\n  \"prompt\": \"Extract entities and relationships from the following document. Return ONLY valid JSON with no explanation.\\n\\nJSON Schema:\\n{\\n  \\\"entities\\\": [\\n    {\\\"id\\\": \\\"unique-id\\\", \\\"name\\\": \\\"Name\\\", \\\"type\\\": \\\"Person|Team|Service|System|Technology|Product|Organization\\\", \\\"description\\\": \\\"brief description\\\"}\\n  ],\\n  \\\"relationships\\\": [\\n    {\\\"source\\\": \\\"entity-id\\\", \\\"target\\\": \\\"entity-id\\\", \\\"type\\\": \\\"OWNS|BELONGS_TO|DEPENDS_ON|RELATED_TO\\\", \\\"description\\\": \\\"relationship description\\\"}\\n  ],\\n  \\\"concepts\\\": [\\n    {\\\"id\\\": \\\"concept-id\\\", \\\"name\\\": \\\"Concept Name\\\", \\\"category\\\": \\\"architecture|security|process|technology\\\"}\\n  ]\\n}\\n\\nDocument:\\n\" + {{ JSON.stringify($json.content) }} + \"\\n\\nJSON:\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.1,\n    \"num_predict\": 2000\n  }\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "extract-entities",
+      "name": "Extract Entities (Ollama)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst ollamaResponse = input.response || '';\nconst docData = $('Validate Input').first().json;\n\n// Try to extract JSON from response\nlet extracted = { entities: [], relationships: [], concepts: [] };\n\ntry {\n  // Find JSON in response (may have text before/after)\n  const jsonMatch = ollamaResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    extracted = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  console.log('Failed to parse extraction:', e.message);\n}\n\n// Ensure arrays exist\nextracted.entities = extracted.entities || [];\nextracted.relationships = extracted.relationships || [];\nextracted.concepts = extracted.concepts || [];\n\n// Add document info\nreturn [{\n  json: {\n    doc_id: docData.doc_id,\n    title: docData.title,\n    source: docData.source,\n    entities: extracted.entities.slice(0, 20),\n    relationships: extracted.relationships.slice(0, 30),\n    concepts: extracted.concepts.slice(0, 10),\n    entity_count: extracted.entities.length,\n    relationship_count: extracted.relationships.length\n  }\n}];"
+      },
+      "id": "parse-extraction",
+      "name": "Parse Extraction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Build Cypher query to create document and entities\nlet cypher = `\n// Create or update document node\nMERGE (d:Document {id: $doc_id})\nSET d.title = $title, d.source = $source, d.updated_at = datetime()\n`;\n\n// Create entities\nif (data.entities && data.entities.length > 0) {\n  cypher += `\nWITH d\nUNWIND $entities AS entity\nMERGE (e:Entity {id: entity.id})\nSET e.name = entity.name, e.type = entity.type, e.description = entity.description\nMERGE (d)-[:MENTIONS]->(e)\n`;\n}\n\n// Create concepts\nif (data.concepts && data.concepts.length > 0) {\n  cypher += `\nWITH d\nUNWIND $concepts AS concept\nMERGE (c:Concept {id: concept.id})\nSET c.name = concept.name, c.category = concept.category\nMERGE (d)-[:ABOUT]->(c)\n`;\n}\n\nreturn [{\n  json: {\n    cypher: cypher,\n    params: {\n      doc_id: data.doc_id,\n      title: data.title,\n      source: data.source,\n      entities: data.entities.map(e => ({\n        id: e.id || `entity_${e.name.toLowerCase().replace(/\\s+/g, '_')}`,\n        name: e.name,\n        type: e.type || 'Entity',\n        description: e.description || ''\n      })),\n      concepts: data.concepts.map(c => ({\n        id: c.id || `concept_${c.name.toLowerCase().replace(/\\s+/g, '_')}`,\n        name: c.name,\n        category: c.category || 'general'\n      }))\n    },\n    relationships: data.relationships,\n    entity_count: data.entity_count,\n    relationship_count: data.relationship_count\n  }\n}];"
+      },
+      "id": "build-cypher",
+      "name": "Build Cypher Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://neo4j:7474/db/neo4j/tx/commit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"statements\": [\n    {\n      \"statement\": {{ JSON.stringify($json.cypher) }},\n      \"parameters\": {{ JSON.stringify($json.params) }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "insert-nodes",
+      "name": "Insert Nodes (Neo4j)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 200],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "neo4j-creds",
+          "name": "Neo4j Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Build Cypher Query').first().json;\nconst relationships = data.relationships || [];\n\nif (relationships.length === 0) {\n  return [{ json: { skip: true } }];\n}\n\n// Build relationship creation query\nconst cypher = `\nUNWIND $rels AS rel\nMATCH (source:Entity {id: rel.source})\nMATCH (target:Entity {id: rel.target})\nCALL apoc.merge.relationship(source, rel.type, {}, {description: rel.description}, target) YIELD rel as r\nRETURN count(r) as created\n`;\n\n// Fallback without APOC\nconst cypherSimple = `\nUNWIND $rels AS rel\nMATCH (source:Entity), (target:Entity)\nWHERE source.id = rel.source AND target.id = rel.target\nMERGE (source)-[r:RELATED_TO]->(target)\nSET r.rel_type = rel.type, r.description = rel.description\nRETURN count(r) as created\n`;\n\nreturn [{\n  json: {\n    cypher: cypherSimple,\n    params: {\n      rels: relationships.map(r => ({\n        source: r.source || `entity_${r.source_name?.toLowerCase().replace(/\\s+/g, '_')}`,\n        target: r.target || `entity_${r.target_name?.toLowerCase().replace(/\\s+/g, '_')}`,\n        type: r.type || 'RELATED_TO',\n        description: r.description || ''\n      }))\n    },\n    skip: false\n  }\n}];"
+      },
+      "id": "build-rels",
+      "name": "Build Relationship Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-skip",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-rels",
+      "name": "Has Relationships?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://neo4j:7474/db/neo4j/tx/commit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"statements\": [\n    {\n      \"statement\": {{ JSON.stringify($json.cypher) }},\n      \"parameters\": {{ JSON.stringify($json.params) }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "insert-rels",
+      "name": "Insert Relationships (Neo4j)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2220, 100],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "neo4j-creds",
+          "name": "Neo4j Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"doc_id\": {{ JSON.stringify($('Validate Input').first().json.doc_id) }},\n  \"entities_extracted\": {{ $('Build Cypher Query').first().json.entity_count }},\n  \"relationships_extracted\": {{ $('Build Cypher Query').first().json.relationship_count }}\n}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2440, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: $json.message || 'Validation failed'}) }}",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Extract Webhook": {
+      "main": [[{"node": "Validate Input", "type": "main", "index": 0}]]
+    },
+    "Validate Input": {
+      "main": [[{"node": "Check Valid", "type": "main", "index": 0}]]
+    },
+    "Check Valid": {
+      "main": [
+        [{"node": "Extract Entities (Ollama)", "type": "main", "index": 0}],
+        [{"node": "Error Response", "type": "main", "index": 0}]
+      ]
+    },
+    "Extract Entities (Ollama)": {
+      "main": [[{"node": "Parse Extraction", "type": "main", "index": 0}]]
+    },
+    "Parse Extraction": {
+      "main": [[{"node": "Build Cypher Query", "type": "main", "index": 0}]]
+    },
+    "Build Cypher Query": {
+      "main": [[{"node": "Insert Nodes (Neo4j)", "type": "main", "index": 0}]]
+    },
+    "Insert Nodes (Neo4j)": {
+      "main": [[{"node": "Build Relationship Query", "type": "main", "index": 0}]]
+    },
+    "Build Relationship Query": {
+      "main": [[{"node": "Has Relationships?", "type": "main", "index": 0}]]
+    },
+    "Has Relationships?": {
+      "main": [
+        [{"node": "Insert Relationships (Neo4j)", "type": "main", "index": 0}],
+        [{"node": "Success Response", "type": "main", "index": 0}]
+      ]
+    },
+    "Insert Relationships (Neo4j)": {
+      "main": [[{"node": "Success Response", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Extracts entities and relationships from documents using Ollama LLM and stores them in Neo4j graph database. Part of the Graph RAG pipeline.",
+    "templateCredsSetupCompleted": false
+  }
+}
