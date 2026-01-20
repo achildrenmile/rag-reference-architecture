@@ -13,7 +13,10 @@
       "name": "Extract Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "extract-graph-webhook"
     },
     {
@@ -24,18 +27,28 @@
       "name": "Validate Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "check-error",
               "leftValue": "={{ $json.error }}",
               "rightValue": false,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -45,7 +58,10 @@
       "name": "Check Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -62,7 +78,10 @@
       "name": "Extract Entities (Ollama)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 200]
+      "position": [
+        900,
+        200
+      ]
     },
     {
       "parameters": {
@@ -72,7 +91,10 @@
       "name": "Parse Extraction",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 200]
+      "position": [
+        1120,
+        200
+      ]
     },
     {
       "parameters": {
@@ -82,7 +104,10 @@
       "name": "Build Cypher Query",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1340, 200]
+      "position": [
+        1340,
+        200
+      ]
     },
     {
       "parameters": {
@@ -99,13 +124,10 @@
       "name": "Insert Nodes (Neo4j)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1560, 200],
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "neo4j-creds",
-          "name": "Neo4j Credentials"
-        }
-      }
+      "position": [
+        1560,
+        200
+      ]
     },
     {
       "parameters": {
@@ -115,18 +137,28 @@
       "name": "Build Relationship Query",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1780, 200]
+      "position": [
+        1780,
+        200
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "check-skip",
               "leftValue": "={{ $json.skip }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "notEquals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
             }
           ],
           "combinator": "and"
@@ -136,7 +168,10 @@
       "name": "Has Relationships?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2000, 200]
+      "position": [
+        2000,
+        200
+      ]
     },
     {
       "parameters": {
@@ -153,13 +188,10 @@
       "name": "Insert Relationships (Neo4j)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2220, 100],
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "neo4j-creds",
-          "name": "Neo4j Credentials"
-        }
-      }
+      "position": [
+        2220,
+        100
+      ]
     },
     {
       "parameters": {
@@ -170,64 +202,156 @@
       "name": "Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2440, 200]
+      "position": [
+        2440,
+        200
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({error: $json.message || 'Validation failed'}) }}",
-        "options": { "responseCode": 400 }
+        "options": {
+          "responseCode": 400
+        }
       },
       "id": "error-response",
       "name": "Error Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [900, 400]
+      "position": [
+        900,
+        400
+      ]
     }
   ],
   "connections": {
     "Extract Webhook": {
-      "main": [[{"node": "Validate Input", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Validate Input": {
-      "main": [[{"node": "Check Valid", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Check Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Valid": {
       "main": [
-        [{"node": "Extract Entities (Ollama)", "type": "main", "index": 0}],
-        [{"node": "Error Response", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Extract Entities (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Extract Entities (Ollama)": {
-      "main": [[{"node": "Parse Extraction", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Parse Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Extraction": {
-      "main": [[{"node": "Build Cypher Query", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Build Cypher Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Cypher Query": {
-      "main": [[{"node": "Insert Nodes (Neo4j)", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Insert Nodes (Neo4j)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Insert Nodes (Neo4j)": {
-      "main": [[{"node": "Build Relationship Query", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Build Relationship Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Relationship Query": {
-      "main": [[{"node": "Has Relationships?", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Has Relationships?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has Relationships?": {
       "main": [
-        [{"node": "Insert Relationships (Neo4j)", "type": "main", "index": 0}],
-        [{"node": "Success Response", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Insert Relationships (Neo4j)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Insert Relationships (Neo4j)": {
-      "main": [[{"node": "Success Response", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1"
-  },
-  "meta": {
-    "description": "Extracts entities and relationships from documents using Ollama LLM and stores them in Neo4j graph database. Part of the Graph RAG pipeline.",
-    "templateCredsSetupCompleted": false
   }
 }
