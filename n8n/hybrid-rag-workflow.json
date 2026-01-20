@@ -240,11 +240,17 @@
       "position": [
         2660,
         0
-      ]
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "neo4j-creds",
+          "name": "Neo4j Credentials"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const neo4jResponse = $input.first().json;\nconst prevData = $('Build Graph Query').first().json;\n\nconst results = neo4jResponse.results?.[0]?.data || [];\n\nlet graphContext = '';\nif (results.length > 0) {\n  graphContext = '## Knowledge Graph Context\\n\\n';\n  results.forEach(r => {\n    const row = r.row;\n    graphContext += `### ${row[0]} (${row[1]})\\n`;\n    if (row[2]) graphContext += `${row[2]}\\n`;\n    \n    const related = (row[3] || []).filter(x => x.name);\n    if (related.length > 0) {\n      graphContext += 'Relationships:\\n';\n      related.forEach(rel => {\n        graphContext += `- ${rel.rel} → ${rel.name} (${rel.type})\\n`;\n      });\n    }\n    \n    const refs = (row[4] || []).filter(x => x.name);\n    if (refs.length > 0) {\n      graphContext += 'Referenced by:\\n';\n      refs.forEach(ref => {\n        graphContext += `- ${ref.name} (${ref.type}) via ${ref.rel}\\n`;\n      });\n    }\n    graphContext += '\\n';\n  });\n}\n\nreturn [{\n  json: {\n    query: prevData.query,\n    model: prevData.model,\n    vector_context: prevData.vector_context,\n    vector_count: prevData.vector_count,\n    graph_context: graphContext,\n    extracted_entities: prevData.extracted_entities,\n    hybrid_mode: true\n  }\n}];"
+        "jsCode": "const neo4jResponse = $input.first().json;\nconst prevData = $('Build Graph Query').first().json;\n\nconst results = neo4jResponse.results?.[0]?.data || [];\n\nlet graphContext = '';\nif (results.length > 0) {\n  graphContext = '## Knowledge Graph Context\\n\\n';\n  results.forEach(r => {\n    const row = r.row;\n    graphContext += `### ${row[0]} (${row[1]})\\n`;\n    if (row[2]) graphContext += `${row[2]}\\n`;\n    \n    const related = (row[3] || []).filter(x => x.name);\n    if (related.length > 0) {\n      graphContext += 'Relationships:\\n';\n      related.forEach(rel => {\n        graphContext += `- ${rel.rel} \u2192 ${rel.name} (${rel.type})\\n`;\n      });\n    }\n    \n    const refs = (row[4] || []).filter(x => x.name);\n    if (refs.length > 0) {\n      graphContext += 'Referenced by:\\n';\n      refs.forEach(ref => {\n        graphContext += `- ${ref.name} (${ref.type}) via ${ref.rel}\\n`;\n      });\n    }\n    graphContext += '\\n';\n  });\n}\n\nreturn [{\n  json: {\n    query: prevData.query,\n    model: prevData.model,\n    vector_context: prevData.vector_context,\n    vector_count: prevData.vector_count,\n    graph_context: graphContext,\n    extracted_entities: prevData.extracted_entities,\n    hybrid_mode: true\n  }\n}];"
       },
       "id": "format-graph",
       "name": "Format Graph Context",
