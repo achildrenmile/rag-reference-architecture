@@ -60,6 +60,9 @@ spec:
             - name: static-files
               mountPath: /app/backend/open_webui/static/loader.js
               subPath: loader.js
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/graph-rag.html
+              subPath: graph-rag.html
           readinessProbe:
             httpGet:
               path: /health
