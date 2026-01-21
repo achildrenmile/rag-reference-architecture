@@ -373,88 +373,46 @@
             line-height: 1.6;
         }
 
-        /* Clickable Document Cards */
-        .document-cards {
+        /* Document Links */
+        .document-links {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.5rem;
             margin-top: 1rem;
         }
 
-        .document-card {
-            display: block;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1rem;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .document-card:hover {
-            background: rgba(79, 70, 229, 0.1);
-            border-color: var(--accent);
-            transform: translateX(4px);
-        }
-
-        .document-card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 0.75rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .document-card-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text);
+        .document-link {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--accent-light);
+            transition: all 0.2s ease;
         }
 
-        .document-card-title svg {
+        .document-link:hover {
+            background: rgba(79, 70, 229, 0.15);
+            color: var(--text);
+        }
+
+        .document-link svg {
             width: 16px;
             height: 16px;
             flex-shrink: 0;
-            stroke: var(--accent-light);
         }
 
-        .document-card-score {
-            background: rgba(79, 70, 229, 0.2);
-            color: var(--accent-light);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            white-space: nowrap;
+        .document-link-title {
+            flex: 1;
+            font-size: 0.9rem;
         }
 
-        .document-card-preview {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            line-height: 1.6;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .document-card-source {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            margin-top: 0.75rem;
+        .document-link-score {
             font-size: 0.75rem;
-            color: var(--accent-light);
-        }
-
-        .document-card-source svg {
-            width: 12px;
-            height: 12px;
+            color: var(--text-muted);
+            opacity: 0.7;
         }
 
         /* Document Modal */
@@ -961,24 +919,13 @@
                         ${graphUsed ? ' enriched with knowledge graph relationships' : ''}.
                     </div>
                     ${Array.isArray(vectorDocs) && vectorDocs.length > 0 ? `
-                        <div class="document-cards">
+                        <div class="document-links">
                             ${vectorDocs.map((doc, i) => `
-                                <div class="document-card" onclick="showDocument(${i})" title="Click to expand">
-                                    <div class="document-card-header">
-                                        <div class="document-card-title">
-                                            ${ICONS.file}
-                                            <span>${escapeHtml(doc.title || 'Document ' + (i + 1))}</span>
-                                        </div>
-                                        <span class="document-card-score">Score: ${doc.score || 'N/A'}</span>
-                                    </div>
-                                    <div class="document-card-preview">${escapeHtml(truncateContent(doc.content, 200))}</div>
-                                    ${doc.source && doc.source !== 'unknown' ? `
-                                        <div class="document-card-source">
-                                            ${ICONS.link}
-                                            <span>${escapeHtml(doc.source)}</span>
-                                        </div>
-                                    ` : ''}
-                                </div>
+                                <a class="document-link" href="#" onclick="showDocument(${i}); return false;">
+                                    ${ICONS.file}
+                                    <span class="document-link-title">${escapeHtml(doc.title || 'Document ' + (i + 1))}</span>
+                                    <span class="document-link-score">${doc.score || ''}</span>
+                                </a>
                             `).join('')}
                         </div>
                     ` : ''}
