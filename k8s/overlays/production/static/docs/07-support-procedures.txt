@@ -1,0 +1,40 @@
+Title: Customer Support Procedures
+Source: Support Team
+
+TechCorp Support Handbook
+
+Response Times:
+- Priority 1 (system down): 15 minutes
+- Priority 2 (major feature broken): 1 hour
+- Priority 3 (minor issues): 4 hours
+- Priority 4 (questions, feature requests): 24 hours
+
+Ticket Workflow:
+1. New tickets auto-assigned based on category
+2. First response acknowledges issue and sets expectations
+3. Update ticket every 4 hours for P1/P2
+4. Close tickets within 24 hours of resolution confirmation
+
+Escalation Path:
+- Level 1: Common issues using knowledge base
+- Level 2: Technical investigation
+- Engineering: Bugs requiring code changes
+- Management: Customer satisfaction issues
+
+Communication:
+- Use templates for common responses
+- Personalize with customer name and specific details
+- Never blame the customer
+- Offer workarounds when possible
+- Follow up after resolution to ensure satisfaction
+
+Tools:
+- Zendesk for ticket management
+- Slack #support-escalations for urgent issues
+- Confluence for internal knowledge base
+- Loom for video explanations
+
+Metrics:
+- Target CSAT score: 4.5/5
+- First response time under SLA: 95%
+- Resolution time tracked weekly

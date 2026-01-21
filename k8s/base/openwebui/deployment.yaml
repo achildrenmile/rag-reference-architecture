@@ -63,6 +63,30 @@ spec:
             - name: static-files
               mountPath: /app/backend/open_webui/static/graph-rag.html
               subPath: graph-rag.html
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/01-employee-onboarding.txt
+              subPath: 01-employee-onboarding.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/02-it-security-policy.txt
+              subPath: 02-it-security-policy.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/03-expense-policy.txt
+              subPath: 03-expense-policy.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/04-api-documentation.txt
+              subPath: 04-api-documentation.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/05-remote-work-guidelines.txt
+              subPath: 05-remote-work-guidelines.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/06-engineering-practices.txt
+              subPath: 06-engineering-practices.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/07-support-procedures.txt
+              subPath: 07-support-procedures.txt
+            - name: static-files
+              mountPath: /app/backend/open_webui/static/docs/08-benefits-overview.txt
+              subPath: 08-benefits-overview.txt
           readinessProbe:
             httpGet:
               path: /health

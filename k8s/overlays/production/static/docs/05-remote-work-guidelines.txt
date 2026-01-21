@@ -1,0 +1,42 @@
+Title: Remote Work Guidelines
+Source: HR Department
+
+TechCorp Remote Work Policy
+
+Eligibility:
+- All employees after completing 90-day probation period
+- Some roles require occasional on-site presence for team meetings or client visits
+
+Work Hours:
+- Core hours: 10am to 3pm in your local timezone for meetings and collaboration
+- Flexible scheduling outside core hours
+- Respond to messages within 4 hours during work hours
+
+Communication:
+- Keep Slack status updated
+- Use video for team meetings when possible
+- Document decisions in writing on Confluence or Jira
+- Weekly 1:1 with manager required
+
+Home Office Setup:
+- Reliable internet (minimum 50 Mbps recommended)
+- Quiet workspace for calls
+- Company provides VPN access and security software
+- Equipment allowance: $500 for ergonomic setup
+
+Performance:
+- Same expectations as on-site work
+- Regular check-ins with manager
+- OKRs reviewed quarterly
+- Focus on output and results, not hours logged
+
+Time Off:
+- Same PTO policy as on-site employees
+- Notify team 24 hours in advance for planned absences
+- Update calendar and set Slack status
+
+Security:
+- Use company VPN for all work
+- Lock screen when away
+- No work on public WiFi without VPN
+- Report security concerns immediately

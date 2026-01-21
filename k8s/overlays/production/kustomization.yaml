@@ -16,5 +16,13 @@ configMapGenerator:
       - static/showcase.html
       - static/graph-rag.html
       - static/loader.js
+      - static/docs/01-employee-onboarding.txt
+      - static/docs/02-it-security-policy.txt
+      - static/docs/03-expense-policy.txt
+      - static/docs/04-api-documentation.txt
+      - static/docs/05-remote-work-guidelines.txt
+      - static/docs/06-engineering-practices.txt
+      - static/docs/07-support-procedures.txt
+      - static/docs/08-benefits-overview.txt
     options:
       disableNameSuffixHash: true

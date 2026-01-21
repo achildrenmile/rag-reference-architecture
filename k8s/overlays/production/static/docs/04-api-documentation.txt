@@ -1,0 +1,48 @@
+Title: Product API Documentation
+Source: Engineering Team
+
+TechCorp API Reference v3.1
+
+Base URL: https://api.techcorp.example/v3
+
+Authentication:
+- All requests require Bearer token in Authorization header
+- Obtain tokens via OAuth2 flow at /oauth/token
+- Tokens expire after 1 hour
+
+Rate Limits:
+- Standard tier: 1000 requests per minute
+- Enterprise tier: 10000 requests per minute
+- Rate limit headers included in all responses
+
+Endpoints:
+
+Users:
+- GET /users - List all users (paginated, 100 per page)
+- POST /users - Create new user (requires admin scope)
+- GET /users/{id} - Get user details
+- PATCH /users/{id} - Update user (partial update supported)
+- DELETE /users/{id} - Soft delete user
+
+Products:
+- GET /products - List products with filtering
+- Query params: category, price_min, price_max, in_stock
+
+Orders:
+- POST /orders - Create order
+- Requires items array with product_id and quantity
+
+Webhooks:
+- Configure at /settings/webhooks
+- Events: order.created, order.shipped, user.signup
+- Retry policy: 3 attempts with exponential backoff
+
+Error Codes:
+- 400 Bad Request
+- 401 Unauthorized
+- 403 Forbidden
+- 404 Not Found
+- 429 Rate Limited
+- 500 Server Error
+
+All errors return JSON with error code and message.

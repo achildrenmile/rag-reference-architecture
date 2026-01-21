@@ -784,6 +784,22 @@
             graph: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>'
         };
 
+        // Document title to file path mapping
+        const DOC_FILES = {
+            "Employee Onboarding Guide": "/static/docs/01-employee-onboarding.txt",
+            "IT Security Policy": "/static/docs/02-it-security-policy.txt",
+            "Expense Reimbursement Policy": "/static/docs/03-expense-policy.txt",
+            "Product API Documentation": "/static/docs/04-api-documentation.txt",
+            "Remote Work Guidelines": "/static/docs/05-remote-work-guidelines.txt",
+            "Engineering Best Practices": "/static/docs/06-engineering-practices.txt",
+            "Customer Support Procedures": "/static/docs/07-support-procedures.txt",
+            "Company Benefits Overview": "/static/docs/08-benefits-overview.txt"
+        };
+
+        function getDocUrl(title) {
+            return DOC_FILES[title] || null;
+        }
+
         document.getElementById('query').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') askQuestion();
         });
@@ -920,13 +936,21 @@
                     </div>
                     ${Array.isArray(vectorDocs) && vectorDocs.length > 0 ? `
                         <div class="document-links">
-                            ${vectorDocs.map((doc, i) => `
-                                <a class="document-link" href="#" onclick="showDocument(${i}); return false;">
-                                    ${ICONS.file}
-                                    <span class="document-link-title">${escapeHtml(doc.title || 'Document ' + (i + 1))}</span>
-                                    <span class="document-link-score">${doc.score || ''}</span>
-                                </a>
-                            `).join('')}
+                            ${vectorDocs.map((doc, i) => {
+                                const url = getDocUrl(doc.title);
+                                const title = escapeHtml(doc.title || 'Document ' + (i + 1));
+                                return url
+                                    ? `<a class="document-link" href="${url}" target="_blank">
+                                        ${ICONS.file}
+                                        <span class="document-link-title">${title}</span>
+                                        <span class="document-link-score">${doc.score || ''}</span>
+                                       </a>`
+                                    : `<span class="document-link" style="cursor: default; opacity: 0.7;">
+                                        ${ICONS.file}
+                                        <span class="document-link-title">${title}</span>
+                                        <span class="document-link-score">${doc.score || ''}</span>
+                                       </span>`;
+                            }).join('')}
                         </div>
                     ` : ''}
                 </div>
