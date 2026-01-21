@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+    <!-- Background square -->
+    <rect x="0" y="0" width="40" height="40" fill="#1a237e"/>
+    <!-- S letter - centered -->
+    <text x="11" y="29" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="white">S</text>
+</svg>
