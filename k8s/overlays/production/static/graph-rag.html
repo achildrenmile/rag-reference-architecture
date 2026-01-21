@@ -28,8 +28,10 @@
             background: var(--bg-dark);
             min-height: 100vh;
             color: var(--text);
-            padding: 2rem;
+            display: flex;
+            flex-direction: column;
         }
+
 
         body::before {
             content: '';
@@ -43,7 +45,7 @@
             z-index: -1;
         }
 
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container { max-width: 1000px; margin: 0 auto; flex: 1; padding: 2rem; }
 
         .header {
             display: flex;
@@ -594,7 +596,6 @@
             border-top: 1px solid var(--border);
             padding: 2rem;
             text-align: center;
-            margin-top: 4rem;
         }
 
         .footer-links {
