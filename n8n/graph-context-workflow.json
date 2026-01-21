@@ -1,0 +1,95 @@
+{
+  "name": "Graph Context API",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "graph-context",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://ai4u.strali.solutions"
+        }
+      },
+      "id": "context-webhook",
+      "name": "Graph Context Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "graph-context-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst entities = body.entities || [];\n\nif (!entities.length) {\n  return [{ json: { nodes: [], edges: [] } }];\n}\n\n// Build Cypher query to get related entities\nconst cypher = `\n  UNWIND $entities AS entityName\n  MATCH (e:Entity)\n  WHERE e.name =~ ('(?i).*' + entityName + '.*')\n  OPTIONAL MATCH (e)-[r]->(related:Entity)\n  RETURN DISTINCT\n    e.name as name,\n    e.type as type,\n    e.description as description,\n    collect(DISTINCT {name: related.name, type: type(r)}) as related\n  LIMIT 20\n`;\n\nreturn [{\n  json: {\n    entities: entities,\n    cypher: cypher,\n    params: { entities: entities }\n  }\n}];"
+      },
+      "id": "build-query",
+      "name": "Build Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://neo4j:7474/db/neo4j/tx/commit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"statements\": [{\n    \"statement\": {{ JSON.stringify($json.cypher) }},\n    \"parameters\": {{ JSON.stringify($json.params) }}\n  }]\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "query-neo4j",
+      "name": "Query Neo4j",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "LpopbSYdY4wKTbsI",
+          "name": "Neo4j Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const neo4jResponse = $input.first().json;\nconst results = neo4jResponse.results?.[0]?.data || [];\n\nconst nodes = [];\nconst edges = [];\nconst seenNodes = new Set();\n\nresults.forEach(r => {\n  const row = r.row;\n  const name = row[0];\n  const type = row[1];\n  const desc = row[2];\n  const related = row[3] || [];\n\n  if (name && !seenNodes.has(name)) {\n    nodes.push({ name, type: type || 'Entity', description: desc || '' });\n    seenNodes.add(name);\n  }\n\n  related.forEach(rel => {\n    if (rel.name && !seenNodes.has(rel.name)) {\n      nodes.push({ name: rel.name, type: 'Entity', description: '' });\n      seenNodes.add(rel.name);\n    }\n    if (rel.name) {\n      edges.push({ from: name, to: rel.name, type: rel.type || 'RELATED_TO' });\n    }\n  });\n});\n\nreturn [{ json: { nodes, edges } }];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Graph Context Webhook": {
+      "main": [[{"node": "Build Query", "type": "main", "index": 0}]]
+    },
+    "Build Query": {
+      "main": [[{"node": "Query Neo4j", "type": "main", "index": 0}]]
+    },
+    "Query Neo4j": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -429,6 +429,81 @@
 
         .hidden { display: none !important; }
 
+        /* Example Queries */
+        .example-queries {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .example-queries p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .query-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .query-chip {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--graph-light);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .query-chip:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--graph-color);
+            transform: translateY(-2px);
+        }
+
+        /* Graph Visualization */
+        .graph-viz-panel {
+            grid-column: 1 / -1;
+        }
+
+        .graph-container {
+            width: 100%;
+            height: 350px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .graph-legend {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.query { background: #f59e0b; }
+        .legend-dot.entity { background: #10b981; }
+        .legend-dot.related { background: #6366f1; }
+
         /* Responsive */
         @media (max-width: 640px) {
             body { padding: 1rem; padding-bottom: 5rem; }
@@ -485,11 +560,20 @@
                     </label>
                 </div>
                 <div class="toggle-group">
-                    <span class="toggle-label">Show Graph Context</span>
+                    <span class="toggle-label">Show Graph Visualization</span>
                     <label class="toggle">
                         <input type="checkbox" id="showGraph" checked>
                         <span class="toggle-slider"></span>
                     </label>
+                </div>
+            </div>
+            <div class="example-queries">
+                <p>Try these queries:</p>
+                <div class="query-chips">
+                    <span class="query-chip" onclick="setQuery('What is the vacation policy?')">Vacation policy</span>
+                    <span class="query-chip" onclick="setQuery('What tools are used for remote work?')">Remote work tools</span>
+                    <span class="query-chip" onclick="setQuery('How do I submit expenses?')">Submit expenses</span>
+                    <span class="query-chip" onclick="setQuery('What does HR manage?')">HR responsibilities</span>
                 </div>
             </div>
         </div>
@@ -503,12 +587,21 @@
         <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
     </footer>
 
+    <!-- vis.js for graph visualization -->
+    <script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
     <script>
         const API_URL = '/api/rag';
+        const GRAPH_API = '/api/graph';
+        let graphNetwork = null;
 
         document.getElementById('query').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') askQuestion();
         });
+
+        function setQuery(text) {
+            document.getElementById('query').value = text;
+            askQuestion();
+        }
 
         function updatePipeline() {
             const hybrid = document.getElementById('hybridMode').checked;
@@ -579,6 +672,7 @@
             const isHybrid = data.mode === 'hybrid';
             const entities = data.sources?.entities_extracted || [];
             const graphUsed = data.sources?.graph_context_used;
+            const query = data.query || document.getElementById('query').value;
 
             let html = '';
 
@@ -597,20 +691,23 @@
                 </div>
             `;
 
-            // Graph context panel (if hybrid and showing graph)
+            // Graph visualization panel (if hybrid and showing graph)
             if (isHybrid && showGraph && entities.length > 0) {
                 html += `
-                    <div class="result-panel">
+                    <div class="result-panel graph-viz-panel">
                         <div class="panel-header">
                             <div class="panel-icon graph">🔗</div>
-                            <span class="panel-title">Extracted Entities</span>
-                            <span class="panel-badge">${entities.length} found</span>
+                            <span class="panel-title">Knowledge Graph</span>
+                            <span class="panel-badge">${entities.length} entities</span>
                         </div>
                         <div class="entity-list">
                             ${entities.map(e => `<span class="entity-tag">${escapeHtml(e)}</span>`).join('')}
                         </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">
-                            These entities were identified in your query and used to retrieve relationship context from the knowledge graph.
+                        <div class="graph-container" id="graph-viz"></div>
+                        <div class="graph-legend">
+                            <div class="legend-item"><span class="legend-dot query"></span> Query</div>
+                            <div class="legend-item"><span class="legend-dot entity"></span> Matched Entity</div>
+                            <div class="legend-item"><span class="legend-dot related"></span> Related Entity</div>
                         </div>
                     </div>
                 `;
@@ -632,6 +729,144 @@
             `;
 
             resultsDiv.innerHTML = html;
+
+            // Render graph visualization if entities exist
+            if (isHybrid && showGraph && entities.length > 0) {
+                setTimeout(() => renderGraph(query, entities), 100);
+            }
+        }
+
+        async function renderGraph(query, entities) {
+            const container = document.getElementById('graph-viz');
+            if (!container) return;
+
+            // Fetch graph data from Neo4j via API
+            let graphData = null;
+            try {
+                const response = await fetch('/api/graph-context', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entities })
+                });
+                if (response.ok) {
+                    graphData = await response.json();
+                }
+            } catch (e) {
+                console.log('Graph API not available, using entities only');
+            }
+
+            // Build nodes and edges
+            const nodes = [];
+            const edges = [];
+            const nodeMap = new Map();
+
+            // Add query node
+            nodes.push({
+                id: 'query',
+                label: truncate(query, 25),
+                color: { background: '#f59e0b', border: '#d97706' },
+                font: { color: '#ffffff' },
+                shape: 'box',
+                margin: 10
+            });
+            nodeMap.set('query', true);
+
+            // Add entity nodes from extracted entities
+            entities.forEach((entity, i) => {
+                const nodeId = `entity_${i}`;
+                nodes.push({
+                    id: nodeId,
+                    label: entity,
+                    color: { background: '#10b981', border: '#059669' },
+                    font: { color: '#ffffff' },
+                    shape: 'ellipse'
+                });
+                nodeMap.set(entity.toLowerCase(), nodeId);
+
+                // Connect to query
+                edges.push({
+                    from: 'query',
+                    to: nodeId,
+                    label: 'mentions',
+                    color: { color: '#6b7280' },
+                    font: { color: '#9ca3af', size: 10 },
+                    arrows: 'to'
+                });
+            });
+
+            // Add related entities from graph data if available
+            if (graphData && graphData.nodes) {
+                graphData.nodes.forEach((node, i) => {
+                    const key = node.name.toLowerCase();
+                    if (!nodeMap.has(key)) {
+                        const nodeId = `related_${i}`;
+                        nodes.push({
+                            id: nodeId,
+                            label: node.name,
+                            title: `${node.type || 'Entity'}: ${node.description || node.name}`,
+                            color: { background: '#6366f1', border: '#4f46e5' },
+                            font: { color: '#ffffff' },
+                            shape: 'ellipse'
+                        });
+                        nodeMap.set(key, nodeId);
+                    }
+                });
+
+                // Add edges from graph data
+                if (graphData.edges) {
+                    graphData.edges.forEach(edge => {
+                        const fromId = nodeMap.get(edge.from.toLowerCase());
+                        const toId = nodeMap.get(edge.to.toLowerCase());
+                        if (fromId && toId) {
+                            edges.push({
+                                from: fromId,
+                                to: toId,
+                                label: edge.type || '',
+                                color: { color: '#4ade80' },
+                                font: { color: '#9ca3af', size: 10 },
+                                arrows: 'to'
+                            });
+                        }
+                    });
+                }
+            }
+
+            // Create network
+            const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+            const options = {
+                physics: {
+                    enabled: true,
+                    solver: 'forceAtlas2Based',
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        springLength: 100,
+                        springConstant: 0.08
+                    },
+                    stabilization: { iterations: 100 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200
+                },
+                nodes: {
+                    borderWidth: 2,
+                    shadow: true,
+                    font: { size: 14 }
+                },
+                edges: {
+                    width: 2,
+                    smooth: { type: 'curvedCW', roundness: 0.2 }
+                }
+            };
+
+            if (graphNetwork) {
+                graphNetwork.destroy();
+            }
+            graphNetwork = new vis.Network(container, data, options);
+        }
+
+        function truncate(str, maxLen) {
+            return str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
         }
 
         function formatAnswer(text) {
