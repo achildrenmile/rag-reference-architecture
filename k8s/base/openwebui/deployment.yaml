@@ -36,6 +36,8 @@ spec:
               value: http://elasticsearch:9200
             - name: ENABLE_RAG_HYBRID_SEARCH
               value: "true"
+            - name: ENABLE_SIGNUP
+              value: "false"
             - name: WEBUI_BANNERS
               value: '[{"id": "demo-warning", "type": "warning", "title": "", "content": "DEMO - DO NOT share sensitive information!", "dismissible": false, "timestamp": 1}, {"id": "legal-notice", "type": "info", "title": "", "content": "By using this service, you agree to our [Imprint](https://strali.solutions/impressum) and [Privacy Policy](https://strali.solutions/datenschutz).", "dismissible": true, "timestamp": 1}]'
           ports:
