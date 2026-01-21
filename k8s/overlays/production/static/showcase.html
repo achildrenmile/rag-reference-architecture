@@ -716,7 +716,7 @@
                 <a href="#architecture">How It Works</a>
                 <a href="#pipeline">Pipeline</a>
                 <a href="#features">Features</a>
-                <a href="#try-it">Try It</a>
+                <a href="https://ai4u.strali.solutions/graph-rag" style="color: #34d399;">Graph RAG</a>
                 <a href="https://strali.solutions/#kontakt" class="btn-primary">Contact Us</a>
             </nav>
         </div>
@@ -724,18 +724,22 @@
 
     <!-- Hero -->
     <section class="hero">
-        <span class="hero-badge">Live Demo Platform</span>
+        <span class="hero-badge">Live Demo Platform — Now with Knowledge Graph</span>
         <h1>RAG Reference Architecture</h1>
         <p class="hero-subtitle">
-            A complete, reproducible Retrieval-Augmented Generation demo featuring self-hosted AI,
-            semantic vector search, and workflow automation. Open source with full documentation.
+            Enterprise-grade Retrieval-Augmented Generation combining <strong>vector search</strong> with
+            <strong>knowledge graph reasoning</strong>. Get smarter, context-aware AI answers that understand
+            relationships between entities — not just keywords.
         </p>
         <div class="hero-buttons">
-            <a href="https://ai4u.strali.solutions" class="btn-large btn-accent">
+            <a href="https://ai4u.strali.solutions/graph-rag" class="btn-large btn-accent" style="background: linear-gradient(135deg, #10b981, #4f46e5);">
+                Try Graph-Enhanced RAG
+            </a>
+            <a href="https://ai4u.strali.solutions" class="btn-large btn-outline">
                 Launch AI Chat
             </a>
             <a href="https://ai4u.strali.solutions/search" class="btn-large btn-outline">
-                Try Semantic Search
+                Semantic Search
             </a>
         </div>
         <div class="status" style="margin-top: 2rem;">
@@ -759,24 +763,30 @@
                 <div class="arch-arrow">↓</div>
                 <div class="arch-row">
                     <div class="arch-box">Ingestion Pipeline</div>
+                    <div class="arch-box" style="background: #10b981;">Entity Extraction</div>
                 </div>
                 <div class="arch-arrow">↓</div>
                 <div class="arch-row">
                     <div class="arch-box">Vector Database</div>
+                    <div class="arch-box" style="background: #10b981;">Knowledge Graph</div>
                     <div class="arch-box">LLM Engine</div>
                 </div>
                 <div class="arch-arrow">↓</div>
                 <div class="arch-row">
                     <div class="arch-box">AI Chat</div>
                     <div class="arch-box">Semantic Search</div>
+                    <div class="arch-box" style="background: linear-gradient(135deg, #10b981, #4f46e5);">Hybrid RAG</div>
                 </div>
             </div>
         </div>
 
         <div class="tech-stack">
+            <span class="tech-badge" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">Knowledge Graph</span>
+            <span class="tech-badge" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">Neo4j</span>
             <span class="tech-badge">Self-Hosted</span>
             <span class="tech-badge">Local LLMs</span>
             <span class="tech-badge">Vector Search</span>
+            <span class="tech-badge">Hybrid RAG</span>
             <span class="tech-badge">Workflow Automation</span>
             <span class="tech-badge">No External APIs</span>
             <span class="tech-badge">EU AI Act Compliant</span>
@@ -924,6 +934,71 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW: Hybrid RAG Pipeline -->
+        <div class="pipeline-section" style="border: 1px solid rgba(16, 185, 129, 0.3); background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(79, 70, 229, 0.05));">
+            <div class="pipeline-title">
+                <svg class="pipeline-title-svg" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/><line x1="5" y1="19" x2="19" y2="19"/></svg>
+                <span style="color: #10b981;">NEW:</span> Hybrid RAG with Knowledge Graph
+            </div>
+
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    Query
+                    <div class="pipeline-step-detail">Natural language</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" style="background: var(--accent);">
+                    Vector Search
+                    <div class="pipeline-step-detail">Find similar docs</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" style="background: #10b981;">
+                    Entity Extraction
+                    <div class="pipeline-step-detail">Identify entities</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" style="background: #10b981;">
+                    Graph Lookup
+                    <div class="pipeline-step-detail">Find relationships</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step" style="background: linear-gradient(135deg, #10b981, var(--accent));">
+                    Combined Context
+                    <div class="pipeline-step-detail">Docs + Graph</div>
+                </div>
+                <span class="pipeline-arrow">→</span>
+                <div class="pipeline-step">
+                    LLM Answer
+                    <div class="pipeline-step-detail">Context-aware</div>
+                </div>
+            </div>
+
+            <div class="pipeline-details">
+                <div class="pipeline-detail-card" style="border-left: 3px solid #10b981;">
+                    <h4 style="color: #34d399;">Why Knowledge Graph?</h4>
+                    <p>Vector search finds similar text, but misses <strong>relationships</strong>. When you ask "Who owns Service X?", vector search finds docs mentioning Service X — but a knowledge graph directly answers: "Team A owns Service X, which depends on Service Y."</p>
+                </div>
+                <div class="pipeline-detail-card" style="border-left: 3px solid #10b981;">
+                    <h4 style="color: #34d399;">Entity Extraction</h4>
+                    <p>LLM automatically extracts <code>Teams</code>, <code>Services</code>, <code>Technologies</code>, and <code>Concepts</code> from documents. Relationships like <code>OWNS</code>, <code>DEPENDS_ON</code>, and <code>BELONGS_TO</code> are captured.</p>
+                </div>
+                <div class="pipeline-detail-card" style="border-left: 3px solid #10b981;">
+                    <h4 style="color: #34d399;">Graph-Enhanced Answers</h4>
+                    <p>Queries are enriched with relationship context before reaching the LLM. The model sees both document chunks AND entity relationships — delivering answers that understand your organization's structure.</p>
+                </div>
+                <div class="pipeline-detail-card" style="border-left: 3px solid #10b981;">
+                    <h4 style="color: #34d399;">Neo4j Integration</h4>
+                    <p>Industry-standard graph database stores entities and relationships. Cypher queries traverse the graph in milliseconds to find relevant context for any question.</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <a href="https://ai4u.strali.solutions/graph-rag" class="btn-large btn-accent" style="background: linear-gradient(135deg, #10b981, var(--accent)); display: inline-block;">
+                    Try Graph-Enhanced RAG →
+                </a>
+            </div>
+        </div>
     </section>
 
     <!-- Features -->
@@ -934,6 +1009,22 @@
         </p>
 
         <div class="features-grid">
+            <div class="feature-card" style="border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(79, 70, 229, 0.05));">
+                <div class="feature-header">
+                    <div class="feature-icon" style="background: #10b981;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>
+                    </div>
+                    <div class="feature-title" style="color: #34d399;">Knowledge Graph RAG</div>
+                </div>
+                <p class="feature-desc">
+                    Go beyond keyword matching. Understand relationships between teams, services,
+                    and concepts. Get answers that know your organization's structure.
+                </p>
+                <a href="https://ai4u.strali.solutions/graph-rag" class="feature-link" style="color: #34d399;">
+                    Try Graph RAG →
+                </a>
+            </div>
+
             <div class="feature-card">
                 <div class="feature-header">
                     <div class="feature-icon">
@@ -1190,6 +1281,7 @@
         <div class="footer-links">
             <a href="https://strali.solutions">Strali Solutions</a>
             <a href="https://ai4u.strali.solutions">AI Chat</a>
+            <a href="https://ai4u.strali.solutions/graph-rag" style="color: #34d399;">Graph RAG</a>
             <a href="https://ai4u.strali.solutions/search">Semantic Search</a>
             <a href="https://n8n.strali.solutions">n8n Workflows</a>
             <a href="https://github.com/achildrenmile/rag-reference-architecture">GitHub</a>
