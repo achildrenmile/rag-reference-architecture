@@ -373,6 +373,211 @@
             line-height: 1.6;
         }
 
+        /* Clickable Document Cards */
+        .document-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .document-card {
+            display: block;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .document-card:hover {
+            background: rgba(79, 70, 229, 0.1);
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .document-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .document-card-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .document-card-title svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            stroke: var(--accent-light);
+        }
+
+        .document-card-score {
+            background: rgba(79, 70, 229, 0.2);
+            color: var(--accent-light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .document-card-preview {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .document-card-source {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--accent-light);
+        }
+
+        .document-card-source svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Document Modal */
+        .document-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .document-modal.open {
+            opacity: 1;
+        }
+
+        .document-modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .document-modal-content {
+            position: relative;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .document-modal.open .document-modal-content {
+            transform: translateY(0);
+        }
+
+        .document-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .document-modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .document-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .document-modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .document-modal-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .document-modal-source {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--accent-light);
+        }
+
+        .document-modal-source svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .document-modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .document-modal-body p {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: var(--text);
+            white-space: pre-wrap;
+            margin: 0;
+        }
+
         /* Loading & Messages */
         .loading {
             text-align: center;
@@ -740,20 +945,48 @@
                 `;
             }
 
-            // Sources panel
+            // Sources panel with clickable documents
+            const vectorDocs = data.sources?.vector_documents || [];
+            const docCount = Array.isArray(vectorDocs) ? vectorDocs.length : vectorDocs;
+
             html += `
                 <div class="result-panel">
                     <div class="panel-header">
                         <div class="panel-icon vector">${ICONS.book}</div>
-                        <span class="panel-title">Sources</span>
-                        <span class="panel-badge">${data.sources?.vector_documents || 0} documents</span>
+                        <span class="panel-title">Source Documents</span>
+                        <span class="panel-badge">${docCount} documents</span>
                     </div>
                     <div style="font-size: 0.85rem; color: var(--text-muted);">
-                        Answer generated from ${data.sources?.vector_documents || 0} retrieved document chunks
+                        Answer generated from ${docCount} retrieved document chunks
                         ${graphUsed ? ' enriched with knowledge graph relationships' : ''}.
                     </div>
+                    ${Array.isArray(vectorDocs) && vectorDocs.length > 0 ? `
+                        <div class="document-cards">
+                            ${vectorDocs.map((doc, i) => `
+                                <div class="document-card" onclick="showDocument(${i})" title="Click to expand">
+                                    <div class="document-card-header">
+                                        <div class="document-card-title">
+                                            ${ICONS.file}
+                                            <span>${escapeHtml(doc.title || 'Document ' + (i + 1))}</span>
+                                        </div>
+                                        <span class="document-card-score">Score: ${doc.score || 'N/A'}</span>
+                                    </div>
+                                    <div class="document-card-preview">${escapeHtml(truncateContent(doc.content, 200))}</div>
+                                    ${doc.source && doc.source !== 'unknown' ? `
+                                        <div class="document-card-source">
+                                            ${ICONS.link}
+                                            <span>${escapeHtml(doc.source)}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             `;
+
+            // Store documents for modal display
+            window.currentDocuments = vectorDocs;
 
             resultsDiv.innerHTML = html;
 
@@ -894,6 +1127,46 @@
 
         function truncate(str, maxLen) {
             return str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
+        }
+
+        function truncateContent(str, maxLen) {
+            if (!str) return '';
+            return str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
+        }
+
+        function showDocument(index) {
+            const docs = window.currentDocuments;
+            if (!docs || !docs[index]) return;
+
+            const doc = docs[index];
+            const modal = document.createElement('div');
+            modal.className = 'document-modal';
+            modal.innerHTML = `
+                <div class="document-modal-backdrop" onclick="closeModal(this.parentElement)"></div>
+                <div class="document-modal-content">
+                    <div class="document-modal-header">
+                        <h3>${escapeHtml(doc.title || 'Document ' + (index + 1))}</h3>
+                        <button class="document-modal-close" onclick="closeModal(this.closest('.document-modal'))">&times;</button>
+                    </div>
+                    <div class="document-modal-meta">
+                        <span class="document-card-score">Score: ${doc.score || 'N/A'}</span>
+                        ${doc.source && doc.source !== 'unknown' ? `
+                            <span class="document-modal-source">${ICONS.link} ${escapeHtml(doc.source)}</span>
+                        ` : ''}
+                    </div>
+                    <div class="document-modal-body">
+                        <p>${escapeHtml(doc.content || 'No content available.')}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('open'), 10);
+        }
+
+        function closeModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('open');
+            setTimeout(() => modal.remove(), 300);
         }
 
         function formatAnswer(text) {
