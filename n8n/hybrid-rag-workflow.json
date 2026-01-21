@@ -17,21 +17,21 @@
       "typeVersion": 2,
       "position": [
         240,
-        300
+        304
       ],
       "webhookId": "hybrid-rag-webhook"
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || {};\n\nconst query = (body.query || body.question || '').trim();\nif (!query || query.length === 0) {\n  return [{ json: { error: true, message: 'Query is required' } }];\n}\n\nreturn [{\n  json: {\n    query: query.slice(0, 2000),\n    hybrid_mode: body.hybrid_mode !== false,  // Default: true\n    vector_limit: Math.min(body.vector_limit || 5, 10),\n    graph_depth: Math.min(body.graph_depth || 2, 3),\n    model: body.model || 'mistral:7b',\n    error: false\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body || {};\n\nconst query = (body.query || body.question || '').trim();\nif (!query || query.length === 0) {\n  return [{ json: { error: true, message: 'Query is required' } }];\n}\n\nreturn [{\n  json: {\n    query: query.slice(0, 2000),\n    hybrid_mode: body.hybrid_mode !== false && body.mode !== 'vector',\n    vector_limit: Math.min(body.vector_limit || 5, 10),\n    graph_depth: Math.min(body.graph_depth || 2, 3),\n    model: body.model || 'mistral:7b',\n    error: false\n  }\n}];\n"
       },
       "id": "validate-input",
       "name": "Validate Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        460,
-        300
+        464,
+        304
       ]
     },
     {
@@ -54,15 +54,16 @@
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-valid",
       "name": "Check Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        680,
-        300
+        688,
+        304
       ]
     },
     {
@@ -71,15 +72,16 @@
         "url": "http://ollama:11434/api/embeddings",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": {{ JSON.stringify($json.query) }}}"
+        "jsonBody": "={\"model\": \"nomic-embed-text\", \"prompt\": {{ JSON.stringify($json.query) }}}",
+        "options": {}
       },
       "id": "embed-query",
       "name": "Embed Query",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        900,
-        200
+        912,
+        208
       ]
     },
     {
@@ -88,7 +90,8 @@
         "url": "http://elasticsearch:9200/rag-demo/_search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"size\": {{ $('Validate Input').item.json.vector_limit }},\n  \"query\": {\n    \"script_score\": {\n      \"query\": {\"match_all\": {}},\n      \"script\": {\n        \"source\": \"cosineSimilarity(params.query_vector, 'embedding') + 1.0\",\n        \"params\": {\n          \"query_vector\": {{ JSON.stringify($json.embedding) }}\n        }\n      }\n    }\n  }\n}"
+        "jsonBody": "={\n  \"size\": {{ $('Validate Input').item.json.vector_limit }},\n  \"query\": {\n    \"script_score\": {\n      \"query\": {\"match_all\": {}},\n      \"script\": {\n        \"source\": \"cosineSimilarity(params.query_vector, 'embedding') + 1.0\",\n        \"params\": {\n          \"query_vector\": {{ JSON.stringify($json.embedding) }}\n        }\n      }\n    }\n  }\n}",
+        "options": {}
       },
       "id": "vector-search",
       "name": "Vector Search (ES)",
@@ -96,7 +99,7 @@
       "typeVersion": 4.2,
       "position": [
         1120,
-        200
+        208
       ]
     },
     {
@@ -108,8 +111,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1340,
-        200
+        1344,
+        208
       ]
     },
     {
@@ -132,15 +135,16 @@
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-hybrid",
       "name": "Hybrid Mode?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1560,
-        200
+        1568,
+        208
       ]
     },
     {
@@ -159,13 +163,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1780,
-        100
+        1792,
+        112
       ]
     },
     {
       "parameters": {
-        "jsCode": "const ollamaResponse = $input.first().json.response || '[]';\nconst prevData = $('Process Vector Results').first().json;\n\n// Parse entities from LLM response\nlet entities = [];\ntry {\n  const match = ollamaResponse.match(/\\[[^\\]]*\\]/);\n  if (match) {\n    entities = JSON.parse(match[0]);\n  }\n} catch (e) {\n  // Try to extract quoted strings\n  const quoted = ollamaResponse.match(/[\"']([^\"']+)[\"']/g);\n  if (quoted) {\n    entities = quoted.map(s => s.replace(/[\"']/g, ''));\n  }\n}\n\nentities = entities.filter(e => typeof e === 'string' && e.length > 1).slice(0, 5);\n\nreturn [{\n  json: {\n    ...prevData,\n    extracted_entities: entities\n  }\n}];"
+        "jsCode": "const ollamaResponse = $input.first().json.response || '[]';\nconst prevData = $('Process Vector Results').first().json;\n\n// Parse entities from LLM response\nlet entities = [];\ntry {\n  // Try to find the response key if it's wrapped\n  let content = ollamaResponse.trim();\n  \n  // Try direct JSON parse first\n  const parsed = JSON.parse(content);\n  if (Array.isArray(parsed)) {\n    entities = parsed;\n  } else if (parsed.entities && Array.isArray(parsed.entities)) {\n    // Handle {entities: [...]} format\n    entities = parsed.entities.map(e => typeof e === 'string' ? e : (e.text || e.name || e.entity || ''));\n  }\n} catch (e) {\n  // Fallback: try to find a JSON array in the response\n  try {\n    // Find balanced brackets for arrays\n    const startIdx = content.indexOf('[');\n    if (startIdx !== -1) {\n      let depth = 0;\n      let endIdx = -1;\n      for (let i = startIdx; i < content.length; i++) {\n        if (content[i] === '[') depth++;\n        if (content[i] === ']') depth--;\n        if (depth === 0) { endIdx = i; break; }\n      }\n      if (endIdx > startIdx) {\n        const arrStr = content.substring(startIdx, endIdx + 1);\n        const arr = JSON.parse(arrStr);\n        entities = arr.map(e => typeof e === 'string' ? e : (e.text || e.name || e.entity || ''));\n      }\n    }\n  } catch (e2) {\n    // Final fallback: extract quoted strings\n    const quoted = content.match(/[\"']([^\"']+)[\"']/g);\n    if (quoted) {\n      entities = quoted.map(s => s.replace(/[\"']/g, ''));\n    }\n  }\n}\n\nentities = entities.filter(e => typeof e === 'string' && e.length > 1).slice(0, 5);\n\nreturn [{\n  json: {\n    ...prevData,\n    extracted_entities: entities\n  }\n}];"
       },
       "id": "parse-entities",
       "name": "Parse Entities",
@@ -173,7 +177,7 @@
       "typeVersion": 2,
       "position": [
         2000,
-        100
+        112
       ]
     },
     {
@@ -185,8 +189,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2220,
-        100
+        2224,
+        112
       ]
     },
     {
@@ -209,15 +213,16 @@
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-graph",
       "name": "Has Entities?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2440,
-        100
+        2448,
+        112
       ]
     },
     {
@@ -238,13 +243,19 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2660,
+        2672,
         0
-      ]
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "LpopbSYdY4wKTbsI",
+          "name": "Neo4j Credentials"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const neo4jResponse = $input.first().json;\nconst prevData = $('Build Graph Query').first().json;\n\nconst results = neo4jResponse.results?.[0]?.data || [];\n\nlet graphContext = '';\nif (results.length > 0) {\n  graphContext = '## Knowledge Graph Context\\n\\n';\n  results.forEach(r => {\n    const row = r.row;\n    graphContext += `### ${row[0]} (${row[1]})\\n`;\n    if (row[2]) graphContext += `${row[2]}\\n`;\n    \n    const related = (row[3] || []).filter(x => x.name);\n    if (related.length > 0) {\n      graphContext += 'Relationships:\\n';\n      related.forEach(rel => {\n        graphContext += `- ${rel.rel} → ${rel.name} (${rel.type})\\n`;\n      });\n    }\n    \n    const refs = (row[4] || []).filter(x => x.name);\n    if (refs.length > 0) {\n      graphContext += 'Referenced by:\\n';\n      refs.forEach(ref => {\n        graphContext += `- ${ref.name} (${ref.type}) via ${ref.rel}\\n`;\n      });\n    }\n    graphContext += '\\n';\n  });\n}\n\nreturn [{\n  json: {\n    query: prevData.query,\n    model: prevData.model,\n    vector_context: prevData.vector_context,\n    vector_count: prevData.vector_count,\n    graph_context: graphContext,\n    extracted_entities: prevData.extracted_entities,\n    hybrid_mode: true\n  }\n}];"
+        "jsCode": "const neo4jResponse = $input.first().json;\nconst prevData = $('Build Graph Query').first().json;\n\nconst results = neo4jResponse.results?.[0]?.data || [];\n\nlet graphContext = '';\nif (results.length > 0) {\n  graphContext = '## Knowledge Graph Context\\n\\n';\n  results.forEach(r => {\n    const row = r.row;\n    graphContext += `### ${row[0]} (${row[1]})\\n`;\n    if (row[2]) graphContext += `${row[2]}\\n`;\n    \n    const related = (row[3] || []).filter(x => x.name);\n    if (related.length > 0) {\n      graphContext += 'Relationships:\\n';\n      related.forEach(rel => {\n        graphContext += `- ${rel.rel} \u2192 ${rel.name} (${rel.type})\\n`;\n      });\n    }\n    \n    const refs = (row[4] || []).filter(x => x.name);\n    if (refs.length > 0) {\n      graphContext += 'Referenced by:\\n';\n      refs.forEach(ref => {\n        graphContext += `- ${ref.name} (${ref.type}) via ${ref.rel}\\n`;\n      });\n    }\n    graphContext += '\\n';\n  });\n}\n\nreturn [{\n  json: {\n    query: prevData.query,\n    model: prevData.model,\n    vector_context: prevData.vector_context,\n    vector_count: prevData.vector_count,\n    graph_context: graphContext,\n    extracted_entities: prevData.extracted_entities,\n    hybrid_mode: true\n  }\n}];"
       },
       "id": "format-graph",
       "name": "Format Graph Context",
@@ -264,8 +275,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1780,
-        300
+        1792,
+        304
       ]
     },
     {
@@ -277,8 +288,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2660,
-        200
+        2672,
+        208
       ]
     },
     {
@@ -290,8 +301,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3100,
-        200
+        3104,
+        208
       ]
     },
     {
@@ -310,8 +321,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3320,
-        200
+        3328,
+        208
       ]
     },
     {
@@ -323,14 +334,15 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3540,
-        200
+        3552,
+        208
       ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}"
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
       },
       "id": "success-response",
       "name": "Success Response",
@@ -338,7 +350,7 @@
       "typeVersion": 1.1,
       "position": [
         3760,
-        200
+        208
       ]
     },
     {
@@ -354,7 +366,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        900,
+        912,
         400
       ]
     }
