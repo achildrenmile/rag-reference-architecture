@@ -263,9 +263,27 @@
             font-size: 0.8rem;
         }
 
-        .panel-icon.graph { background: rgba(16, 185, 129, 0.2); color: var(--graph-light); }
-        .panel-icon.vector { background: rgba(79, 70, 229, 0.2); color: var(--accent-light); }
-        .panel-icon.answer { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .panel-icon.graph { background: rgba(16, 185, 129, 0.2); }
+        .panel-icon.vector { background: rgba(79, 70, 229, 0.2); }
+        .panel-icon.answer { background: rgba(251, 191, 36, 0.2); }
+
+        .panel-icon svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .panel-icon.graph svg { stroke: var(--graph-light); }
+        .panel-icon.vector svg { stroke: var(--accent-light); }
+        .panel-icon.answer svg { stroke: #fbbf24; }
+
+        .mode-badge svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .mode-badge.hybrid svg { stroke: var(--graph-light); }
+        .mode-badge.vector svg { stroke: var(--accent-light); }
 
         .panel-title {
             font-weight: 600;
@@ -594,6 +612,15 @@
         const GRAPH_API = '/api/graph';
         let graphNetwork = null;
 
+        // SVG Icons
+        const ICONS = {
+            link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+            file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+            lightbulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>',
+            book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+            graph: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>'
+        };
+
         document.getElementById('query').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') askQuestion();
         });
@@ -680,11 +707,11 @@
             html += `
                 <div class="answer-panel result-panel">
                     <div class="mode-badge ${isHybrid ? 'hybrid' : 'vector'}">
-                        ${isHybrid ? '🔗 Hybrid Mode' : '📄 Vector Only'}
+                        ${isHybrid ? ICONS.link + ' Hybrid Mode' : ICONS.file + ' Vector Only'}
                         ${isHybrid && graphUsed ? ' • Graph context applied' : ''}
                     </div>
                     <div class="panel-header">
-                        <div class="panel-icon answer">💡</div>
+                        <div class="panel-icon answer">${ICONS.lightbulb}</div>
                         <span class="panel-title">Answer</span>
                     </div>
                     <div class="answer-content">${formatAnswer(data.answer)}</div>
@@ -696,7 +723,7 @@
                 html += `
                     <div class="result-panel graph-viz-panel">
                         <div class="panel-header">
-                            <div class="panel-icon graph">🔗</div>
+                            <div class="panel-icon graph">${ICONS.graph}</div>
                             <span class="panel-title">Knowledge Graph</span>
                             <span class="panel-badge">${entities.length} entities</span>
                         </div>
@@ -717,7 +744,7 @@
             html += `
                 <div class="result-panel">
                     <div class="panel-header">
-                        <div class="panel-icon vector">📚</div>
+                        <div class="panel-icon vector">${ICONS.book}</div>
                         <span class="panel-title">Sources</span>
                         <span class="panel-badge">${data.sources?.vector_documents || 0} documents</span>
                     </div>
