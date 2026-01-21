@@ -127,7 +127,13 @@
       "position": [
         1560,
         200
-      ]
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "LpopbSYdY4wKTbsI",
+          "name": "Neo4j Credentials"
+        }
+      }
     },
     {
       "parameters": {
@@ -191,7 +197,13 @@
       "position": [
         2220,
         100
-      ]
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "LpopbSYdY4wKTbsI",
+          "name": "Neo4j Credentials"
+        }
+      }
     },
     {
       "parameters": {
