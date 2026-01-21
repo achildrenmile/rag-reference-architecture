@@ -35,6 +35,12 @@ data:
         uwsgi_temp_path /tmp/uwsgi_temp;
         scgi_temp_path /tmp/scgi_temp;
 
+        # Rate limiting zones (use X-Forwarded-For since behind Cloudflare)
+        # RAG API: 5 requests per minute per IP
+        limit_req_zone $http_x_forwarded_for zone=rag_api:10m rate=5r/m;
+        # Graph context API: 10 requests per minute per IP
+        limit_req_zone $http_x_forwarded_for zone=graph_api:10m rate=10r/m;
+
         upstream openwebui {
             server openwebui:8080;
         }
@@ -64,6 +70,8 @@ data:
 
             # Proxy n8n RAG API (same-origin to avoid CORS)
             location /api/rag {
+                limit_req zone=rag_api burst=3 nodelay;
+                limit_req_status 429;
                 proxy_pass http://n8n:5678/webhook/rag;
                 proxy_http_version 1.1;
                 proxy_set_header Host $host;
@@ -77,6 +85,8 @@ data:
 
             # Proxy graph context API for visualization
             location /api/graph-context {
+                limit_req zone=graph_api burst=5 nodelay;
+                limit_req_status 429;
                 proxy_pass http://n8n:5678/webhook/graph-context;
                 proxy_http_version 1.1;
                 proxy_set_header Host $host;
