@@ -34,7 +34,6 @@
             min-height: 100vh;
             color: var(--text);
             padding: 2rem;
-            padding-bottom: 5rem;
             cursor: default;
         }
 
@@ -317,26 +316,43 @@
 
         /* Footer */
         footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 0.875rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
             border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
         }
 
-        footer a {
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        .footer-legal {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .footer-legal a {
             color: var(--accent-light);
             text-decoration: none;
-            transition: color 0.3s ease;
         }
 
-        footer a:hover {
+        .footer-legal a:hover {
             color: var(--text);
         }
 
@@ -515,9 +531,21 @@
     </script>
 
     <footer>
-        By using this service, you agree to our
-        <a href="https://strali.solutions/impressum">Imprint</a> and
-        <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
+        <div class="footer-links">
+            <a href="https://strali.solutions">Strali Solutions</a>
+            <a href="https://ai4u.strali.solutions">AI Chat</a>
+            <a href="https://ai4u.strali.solutions/graph-rag">Graph RAG</a>
+            <a href="https://ai4u.strali.solutions/search">Semantic Search</a>
+            <a href="https://n8n.strali.solutions">n8n Workflows</a>
+            <a href="https://github.com/achildrenmile/rag-reference-architecture">GitHub</a>
+        </div>
+        <p class="footer-legal">
+            By using this service, you agree to our
+            <a href="https://strali.solutions/impressum">Imprint</a> and
+            <a href="https://strali.solutions/datenschutz">Privacy Policy</a>.
+            <br>
+            &copy; 2025 Strali Solutions. This is a demonstration platform.
+        </p>
     </footer>
 </body>
 </html>
