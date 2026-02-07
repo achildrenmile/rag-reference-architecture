@@ -69,9 +69,6 @@ spec:
               mountPath: /app/backend/open_webui/static/favicon.svg
               subPath: favicon.svg
             - name: static-files
-              mountPath: /app/backend/open_webui/static/fonts/inter.css
-              subPath: inter.css
-            - name: static-files
               mountPath: /app/backend/open_webui/static/docs/01-employee-onboarding.txt
               subPath: 01-employee-onboarding.txt
             - name: static-files
