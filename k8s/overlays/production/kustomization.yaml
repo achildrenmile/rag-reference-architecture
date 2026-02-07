@@ -17,6 +17,7 @@ configMapGenerator:
       - static/graph-rag.html
       - static/loader.js
       - static/favicon.svg
+      - static/fonts/inter.css
       - static/docs/01-employee-onboarding.txt
       - static/docs/02-it-security-policy.txt
       - static/docs/03-expense-policy.txt
