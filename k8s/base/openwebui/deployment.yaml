@@ -20,6 +20,7 @@ spec:
       containers:
         - name: openwebui
           image: ghcr.io/open-webui/open-webui:main
+          imagePullPolicy: Always
           env:
             - name: OLLAMA_BASE_URL
               value: http://ollama:11434
