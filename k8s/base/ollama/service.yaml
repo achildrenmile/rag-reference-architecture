@@ -4,9 +4,17 @@ metadata:
   name: ollama
   namespace: rag-demo
 spec:
+  # NodePort, damit Ollama auch von ausserhalb des Clusters erreichbar ist:
+  # der MeshBot laeuft auf host-node-01 und beantwortet damit !frag. Innerhalb
+  # des Clusters aendert sich nichts, die ClusterIP bleibt bestehen.
+  #
+  # Der Port ist fest vergeben statt zufaellig, weil er in der Konfiguration des
+  # Bots steht und sich nicht bei einem Sync verschieben darf.
+  type: NodePort
   selector:
     app: ollama
   ports:
     - port: 11434
       targetPort: 11434
+      nodePort: 30434
       name: http
