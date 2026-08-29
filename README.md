@@ -252,6 +252,23 @@ kubectl port-forward -n rag-demo svc/n8n 5678:5678
 kubectl port-forward -n rag-demo svc/elasticsearch 9200:9200
 ```
 
+**Ollama needs no port forwarding.** Its service is a `NodePort`, so it is reachable
+from anywhere on the LAN:
+
+```bash
+curl http://192.168.1.32:30434/api/version
+```
+
+This exists because a client outside the cluster consumes it: the MeshBot on
+`host-node-01` answers its `!frag` command through it. The port is pinned in
+`k8s/base/ollama/service.yaml` rather than assigned at random, because it sits in
+that bot's configuration and must not move on a sync.
+
+> **Ollama has no authentication.** Whoever reaches `192.168.1.32:30434` can use any
+> model in the namespace, on the CPU budget of a machine that also runs ArgoCD,
+> Velero and MinIO. That is acceptable inside the LAN and the same exposure
+> `openwebui` and `n8n` already have. Do not route it through a tunnel.
+
 ### Step 9: Pull Additional Models (k3s)
 
 ```bash
@@ -263,10 +280,26 @@ kubectl exec -n rag-demo deployment/ollama -- ollama pull llama3.1:8b
 kubectl exec -n rag-demo deployment/ollama -- ollama pull llava        # Vision
 kubectl exec -n rag-demo deployment/ollama -- ollama pull llama3.2:3b  # Fast/efficient
 kubectl exec -n rag-demo deployment/ollama -- ollama pull gemma2:2b    # Fast/efficient
+kubectl exec -n rag-demo deployment/ollama -- ollama pull gemma3:4b    # Short German answers
 
 # Verify models
 kubectl exec -n rag-demo deployment/ollama -- ollama list
 ```
+
+**Two things worth knowing before picking a model on this hardware** (Ryzen 9 8945HS,
+CPU only -- there is no usable GPU):
+
+- **`gpt-oss:20b` does not run here.** The llama-server is killed by the OOM killer
+  while loading. The request comes back as **HTTP 200** with
+  `{"error": "llama-server process has terminated: signal: killed"}`, so a client
+  that only checks the status code sees an empty answer and no reason for it.
+- **`qwen3:4b` ignores `think: false`** and writes its reasoning into the answer as
+  plain prose ("Okay, I need to answer the question..."), 320+ characters every time.
+  There are no `<think>` tags, so a client cannot strip it either.
+
+Measured with a system prompt asking for one line of at most 96 characters, five
+questions each: `gemma3:4b` stayed within the budget 5/5 at ~1.5 s per answer,
+`gemma2:2b` 3/5, `llama3.1:8b` ran at half the speed, `qwen3:4b` 0/5.
 
 ### Step 10: Import n8n Workflows (k3s)
 
